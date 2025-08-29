@@ -1,0 +1,28 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"   // This points to a local SQLite database file
+}
+
+// Example User model
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  uploads   Upload[]
+}
+
+// Example Upload model
+model Upload {
+  id        Int      @id @default(autoincrement())
+  filename  String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  createdAt DateTime @default(now())
+}
