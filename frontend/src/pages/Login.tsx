@@ -85,7 +85,7 @@ const handleSubmit = (e: React.FormEvent) => {
           </div>
         </div>
 
-        <button onClick = {handleSubmit} className="w-full p-2 bg-green-500 rounded-xl mt-3 hover:bg-green-600 text-sm md:text-base">Login</button>
+        <button  onClick={handleSubmit} className="w-full p-2 bg-green-500 rounded-xl mt-3 hover:bg-green-600 text-sm md:text-base">Login</button>
 
           <div className="relative w-full flex item-center justify-center py-3">
             <div className="w-2/3 h-[2px] bg-gray-800"></div>
