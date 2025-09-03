@@ -9,14 +9,55 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useState } from "react";
 import { FaGoogle } from "react-icons/fa";
 import { FaApple } from "react-icons/fa";
-
-
-
+import { useNavigate } from "react-router-dom";
 
 
 const Login = () => {
-  const [showPassword, setShowPassword] = useState<boolean>(false); 
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
+
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault(); // stop form refresh
+  navigate("/dashboard"); // go to dashboard
+};
+
+
+  //   const handleSubmit = async (e: React.FormEvent) => {
+  //   // e.preventDefault();
+  //   // setError(null);
+  //   // setLoading(true);
+  //     console.log("Testing")
+      
+  //   // try {
+  //   //   const res = await fetch("http://localhost:4000/api/auth/login", {
+  //   //     method: "POST",
+  //   //     headers: { "Content-Type": "application/json" },
+  //   //     credentials: "include", // important for session cookie
+  //   //     body: JSON.stringify({ email, password }),
+  //   //   });
+
+  //   //   if (!res.ok) {
+  //   //     const data = await res.json();
+  //   //     throw new Error(data.error || "Login failed");
+  //   //   }
+
+  //   //   // login successful → go to dashboard
+  //   //   navigate("/dashboard");
+  //   // } catch (err: any) {
+  //   //   setError(err.message);
+  //   // } finally {
+  //   //   setLoading(false);
+  //   // }
+  //   navigate("/Dashboard");
+  // };
+
   return (
 
     <div className="w-full h-screen flex items-center justify-center">
@@ -44,7 +85,7 @@ const Login = () => {
           </div>
         </div>
 
-        <button className="w-full p-2 bg-green-500 rounded-xl mt-3 hover:bg-green-600 text-sm md:text-base">Login</button>
+        <button onClick = {handleSubmit} className="w-full p-2 bg-green-500 rounded-xl mt-3 hover:bg-green-600 text-sm md:text-base">Login</button>
 
           <div className="relative w-full flex item-center justify-center py-3">
             <div className="w-2/3 h-[2px] bg-gray-800"></div>
