@@ -1,93 +1,101 @@
-import React, { useEffect, useState } from "react";
-import Layout from "../components/Layout";
-import StatCard from "../components/StatCard";
-import UploadButton from "../components/UploadButton";
-import FolderCard from "../components/FolderCard";
-import UpgradeBanner from "../components/UpgradeBanner";
-import api from "../api/api";
+// src/pages/Dashboard.tsx
+import React from "react";
+import { FaFolder, FaPlus } from "react-icons/fa";
 
-/**
- * Dashboard replicates the visual structure of your screenshot, adapted to web.
- * - Pulls upload status (used/limit)
- * - Big "Select an Image" button that uploads 1 file to /api/upload
- * - "Selected Folders" showcase (static)
- * - Upgrade banner
- */
-export default function Dashboard({ onLogout }: { onLogout?: () => void }) {
-  const [uploadsUsed, setUploadsUsed] = useState(0);
-  const [limit, setLimit] = useState(5);
-  const [scansToday, setScansToday] = useState(24);   // demo stats; wire to API later if desired
-  const [threatsBlocked, setThreatsBlocked] = useState(2);
-  const [lastVerdict, setLastVerdict] = useState<string>("");
-
-  async function refreshStatus() {
-    try {
-      const { data } = await api.get("/upload/status");
-      setUploadsUsed(data.uploadsUsed ?? 0);
-      setLimit(data.limit ?? 5);
-    } catch (err) {
-      // not logged in or server error – the ProtectedRoute should usually prevent this
-      console.warn("status error", err);
-    }
-  }
-
-  useEffect(() => {
-    refreshStatus();
-  }, []);
-
-  function handleUploaded(verdict: string, used: number) {
-    setLastVerdict(verdict);
-    setUploadsUsed(used);
-    setScansToday((n) => n + 1);
-    if (verdict !== "clean") setThreatsBlocked((n) => n + 1);
-  }
-
-  const limitReached = uploadsUsed >= limit;
-
+const Dashboard: React.FC = () => {
   return (
-    <Layout onSignOut={onLogout} userName="Stego User">
-      {/* Top status card */}
-      <StatCard
-        scansToday={scansToday}
-        threatsBlocked={threatsBlocked}
-        subtitle={lastVerdict ? `Latest result: ${lastVerdict}` : "No threats found today"}
-      />
-
-      {/* Upload CTA */}
-      <div className="mt-4 card-soft">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-sm text-textSoft">Upload</div>
-          <button className="btn-ghost" onClick={refreshStatus}>Refresh</button>
-        </div>
-
-        <UploadButton onUploaded={handleUploaded} disabled={limitReached} />
-
-        {limitReached && (
-          <div className="mt-3 text-sm text-textSoft">
-            You’ve reached your trial limit. Enjoying Stego?{" "}
-            <a className="underline decoration-dotted" href="#" onClick={(e)=>e.preventDefault()}>
-              Contact sales
-            </a>
-            .
+    <div className="w-full h-screen bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center p-6">
+      <div className="w-[95%] max-w-5xl bg-gray-900 text-white rounded-2xl shadow-lg p-6 flex flex-col gap-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-semibold">Welcome back</h2>
+            <p className="text-gray-400 text-sm">Stego User</p>
           </div>
-        )}
-      </div>
+          <button
+            onClick={() => {}}
+            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-sm font-medium"
+          >
+            Sign Out
+          </button>
+        </div>
 
-      {/* Selected Folders */}
-      <div className="mt-6">
-        <div className="section-title mb-2">Selected Folders</div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <FolderCard label="WhatsApp Images" count={0} />
-          <FolderCard label="WhatsApp Documents" count={0} />
-          <FolderCard label="Instagram" count={0} />
-          <FolderCard label="Add Folder" count={0} variant="premium" />
+        {/* Device Protected Card */}
+        <div className="bg-gray-800 p-6 rounded-xl shadow-md flex flex-col md:flex-row justify-between items-center gap-4">
+          <div>
+            <h3 className="text-lg font-semibold">Device Protected</h3>
+            <p className="text-gray-400 text-sm">No threats found today</p>
+          </div>
+          <div className="flex gap-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-400">24</p>
+              <p className="text-xs text-gray-400">Scans Today</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-red-400">2</p>
+              <p className="text-xs text-gray-400">Threats Blocked</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Upload Section */}
+        <div className="bg-gray-800 p-6 rounded-xl shadow-md">
+          <button
+            onClick={() => {}}
+            className="w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 text-base font-medium"
+          >
+            Select an Image
+          </button>
+        </div>
+
+        {/* Selected Folders */}
+        <div>
+          <h3 className="text-sm text-gray-400 mb-3">Selected Folders</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-gray-800 p-4 rounded-xl shadow-md flex flex-col items-center cursor-pointer hover:bg-gray-700">
+              <FaFolder className="text-2xl mb-2" />
+              <p className="font-medium">WhatsApp Images</p>
+              <p className="text-gray-400 text-sm">245 items</p>
+            </div>
+            <div className="bg-gray-800 p-4 rounded-xl shadow-md flex flex-col items-center cursor-pointer hover:bg-gray-700">
+              <FaFolder className="text-2xl mb-2" />
+              <p className="font-medium">WhatsApp Documents</p>
+              <p className="text-gray-400 text-sm">87 items</p>
+            </div>
+            <div className="bg-gray-800 p-4 rounded-xl shadow-md flex flex-col items-center cursor-pointer hover:bg-gray-700">
+              <FaFolder className="text-2xl mb-2" />
+              <p className="font-medium">Instagram</p>
+              <p className="text-gray-400 text-sm">156 items</p>
+            </div>
+            <div
+              onClick={() => {}}
+              className="bg-gray-800 p-4 rounded-xl shadow-md flex flex-col items-center cursor-pointer hover:bg-gray-700 border border-dashed border-gray-600"
+            >
+              <FaPlus className="text-2xl mb-2 text-yellow-400" />
+              <p className="font-medium text-yellow-400">Add Folder</p>
+              <p className="text-gray-400 text-sm">Premium</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Upgrade Banner */}
+        <div className="bg-yellow-600 p-5 rounded-xl shadow-md flex flex-col md:flex-row justify-between items-center">
+          <div>
+            <h3 className="font-semibold text-lg">Upgrade to Premium</h3>
+            <p className="text-sm text-yellow-100">
+              Auto-scan & real-time protection
+            </p>
+          </div>
+          <button
+            onClick={() => {}}
+            className="mt-3 md:mt-0 px-6 py-2 bg-gray-900 rounded-lg hover:bg-gray-800"
+          >
+            Upgrade
+          </button>
         </div>
       </div>
-
-      {/* Upgrade banner */}
-      <div className="mt-6">
-        <UpgradeBanner />
-      </div>
-    </Layout>
+    </div>
   );
-}
+};
+
+export default Dashboard;

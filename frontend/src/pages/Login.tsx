@@ -28,6 +28,11 @@ const handleSubmit = (e: React.FormEvent) => {
   navigate("/dashboard"); // go to dashboard
 };
 
+const handleSubmitRegister = (e: React.FormEvent) => {
+  e.preventDefault(); // stop form refresh
+  navigate("/register"); // go to register
+};
+
 
   //   const handleSubmit = async (e: React.FormEvent) => {
   //   // e.preventDefault();
@@ -67,7 +72,7 @@ const handleSubmit = (e: React.FormEvent) => {
                         <img src="./public/vite.svg" alt="Logo" className="w-12 md:w-14 " />
                         <h1 className="text-lg md:text-x1 font-semibold"> Welcome to Stego</h1>
                         <p className="text-xs md:text-sm text-gray-500 text-center"> Dont have an Account?
-                          <span className="text-white "> Sign up</span>
+                          <span onClick={handleSubmitRegister}  className="text-white cursor-pointer"> Sign up</span>
                         </p>
 
         <div className="w-full flex flex-col gap-3">
