@@ -6,16 +6,19 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"   // This points to a local SQLite database file
+  url      = "file:./dev.db" // This points to a local SQLite database file
 }
 
 model User {
-  id           Int       @id @default(autoincrement())
-  email        String    @unique
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
   password     String
-  createdAt    DateTime  @default(now())
-  uploadsUsed  Int       @default(0)   // <-- Add this field
-  uploads      UploadEvent[]           // relation (optional, if you want to link uploads)
+  name         String?
+  phone        String?
+  organization String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  uploads      UploadEvent[]
 }
 
 model UploadEvent {

@@ -42,7 +42,7 @@ export function createApp() {
         db: "sessions.sqlite",
         dir: "./"
       }),
-      secret: process.env.SESSION_SECRET!,
+      secret: process.env.SESSION_SECRET || "supersecret123",
       resave: false,
       saveUninitialized: false,
       cookie: {
@@ -55,12 +55,12 @@ export function createApp() {
   );
 
   // CSRF protection for JSON routes (ignore raw multipart uploads)
-  app.use(
-    csrf({
-      cookie: false,
-      ignoreMethods: ["GET", "HEAD", "OPTIONS"]
-    })
-  );
+  // app.use(
+  //   csrf({
+  //     cookie: false,
+  //     ignoreMethods: ["GET", "HEAD", "OPTIONS"]
+  //   })
+  // );
 
   // Mount API routes
   app.use("/api/auth", authRoutes);
