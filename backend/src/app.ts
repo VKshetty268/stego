@@ -5,6 +5,11 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 
 import authRoutes from "./routes/auth";
+import fileRoutes from "./routes/files";
+
+// ...
+
+
 
 export default function createApp() {
   const app = express();
@@ -24,6 +29,7 @@ export default function createApp() {
   // routes
   app.get("/health", (_req, res) => res.json({ ok: true }));
   app.use("/api/auth", authRoutes);
+  app.use("/api/files", fileRoutes);
 
   return app;
 }
