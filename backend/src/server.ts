@@ -1,10 +1,23 @@
-// src/server.ts
-import { createApp } from "./app.js";
+import mongoose from "mongoose";
+import createApp from "./app";
+import dotenv from "dotenv";
+dotenv.config();
 
-// Read port from env or default 4000
-const port = Number(process.env.PORT || 4000);
-const app = createApp();
+console.log("🔍 Loaded MONGO_URI =", process.env.MONGO_URI);
 
-app.listen(port, () => {
-  console.log(`API listening on http://localhost:${port}`);
-});
+async function main() {
+  try {
+    await mongoose.connect(process.env.MONGO_URI || "");
+    console.log(" Mongo connected at", process.env.MONGO_URI);
+
+    const app = createApp();
+    const PORT = Number(process.env.PORT) || 4000;
+    app.listen(PORT, () => {
+      console.log(` API listening on http://localhost:${PORT}`);
+    });
+  } catch (err) {
+    console.error(" Mongo connection error:", err);
+  }
+}
+
+main();
