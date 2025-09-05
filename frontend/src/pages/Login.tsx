@@ -1,5 +1,6 @@
+// src/pages/Login.tsx
 import { MdEmail } from "react-icons/md";
-import { FaFingerprint, FaEye, FaEyeSlash, FaGoogle, FaApple } from "react-icons/fa";
+import { FaFingerprint, FaEye, FaEyeSlash, FaGoogle } from "react-icons/fa";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -69,14 +70,6 @@ const Login = () => {
 
   const handleGoogleLogin = () => {
     googleLogin();
-  };
-
-  // ------------------ Placeholders for other social logins ------------------
-  const handleEmailLogin = () => {
-    alert("Email login (magic link) not implemented yet.");
-  };
-  const handleAppleLogin = () => {
-    alert("Apple login not implemented yet.");
   };
 
   return (
@@ -151,26 +144,15 @@ const Login = () => {
           <div className="w-2/3 h-[2px] bg-gray-800"></div>
         </div>
 
-        {/* Social Buttons */}
-        <div className="relative w-full flex items-center justify-between py-3">
-          <div
+        {/* Google Only Button (stretched full width) */}
+        <div className="relative w-full py-3">
+          <button
             onClick={handleGoogleLogin}
-            className="p-2 md:px-10 bg-slate-600 cursor-pointer rounded-xl hover:bg-slate-700"
+            className="flex items-center justify-center gap-2 w-full p-3 bg-slate-600 cursor-pointer rounded-xl hover:bg-slate-700"
           >
             <FaGoogle className="text-lg md:text-xl" />
-          </div>
-          <div
-            onClick={handleEmailLogin}
-            className="p-2 md:px-10 bg-slate-600 cursor-pointer rounded-xl hover:bg-slate-700"
-          >
-            <MdEmail className="text-lg md:text-xl" />
-          </div>
-          <div
-            onClick={handleAppleLogin}
-            className="p-2 md:px-10 bg-slate-600 cursor-pointer rounded-xl hover:bg-slate-700"
-          >
-            <FaApple className="text-lg md:text-xl" />
-          </div>
+            <span className="text-sm md:text-base">Continue with Google</span>
+          </button>
         </div>
       </div>
     </div>

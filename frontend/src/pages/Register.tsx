@@ -1,7 +1,7 @@
+// src/pages/Register.tsx
 import { useState } from "react";
 import { MdEmail, MdPhone } from "react-icons/md";
-import { FaFingerprint, FaBuilding } from "react-icons/fa";
-import { FaEye, FaEyeSlash, FaUser } from "react-icons/fa";
+import { FaFingerprint, FaBuilding, FaEye, FaEyeSlash, FaUser } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 const Register = () => {
@@ -41,7 +41,7 @@ const Register = () => {
         throw new Error(data.error || "Registration failed");
       }
 
-      navigate("/dashboard"); // redirect on success
+      navigate("/dashboard");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -64,10 +64,7 @@ const Register = () => {
           </span>
         </p>
 
-        <form
-          onSubmit={handleSubmit}
-          className="w-full flex flex-col gap-3 mt-2"
-        >
+        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3 mt-2">
           {/* Name */}
           <div className="w-full flex items-center bg-gray-800 p-2 rounded-xl gap-2">
             <FaUser className="text-white" />
@@ -158,6 +155,14 @@ const Register = () => {
             {loading ? "Registering..." : "Register"}
           </button>
         </form>
+
+        {/* Back to Login Button */}
+        <button
+          onClick={() => navigate("/")}
+          className="w-full p-2 bg-gray-700 rounded-xl mt-3 hover:bg-gray-600 text-sm md:text-base"
+        >
+          Back to Login
+        </button>
       </div>
     </div>
   );
