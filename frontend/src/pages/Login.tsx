@@ -2,6 +2,8 @@ import { MdEmail } from "react-icons/md";
 import { FaFingerprint, FaEye, FaEyeSlash, FaGoogle, FaApple } from "react-icons/fa";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useGoogleLogin } from "@react-oauth/google";
+import axios from "axios";
 import API from "../api/api";
 
 const Login = () => {
@@ -14,40 +16,62 @@ const Login = () => {
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
-  // Handle Login
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError(null);
-  setLoading(true);
+  // ------------------ Handle Local Login ------------------
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
 
-  try {
-    const res = await API.post("/auth/login", { email, password });
+    try {
+      const res = await API.post("/auth/login", { email, password });
 
-    // 🔹 Save token in localStorage (optional)
-    if (res.data?.token) {
-      localStorage.setItem("token", res.data.token);
+      if (res.data?.token) {
+        localStorage.setItem("token", res.data.token);
+      }
+
+      navigate("/dashboard");
+    } catch (err: any) {
+      setError(err?.response?.data?.error || "Login failed");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // 🔹 Cookie is already set by backend
-    navigate("/dashboard");
-  } catch (err: any) {
-    setError(err?.response?.data?.error || "Login failed");
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  // Handle navigation to Register
+  // ------------------ Handle Register Navigation ------------------
   const handleSubmitRegister = (e: React.FormEvent) => {
     e.preventDefault();
     navigate("/register");
   };
 
-  // Social login placeholders
+  // ------------------ Google Login ------------------
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        const res = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+
+        const backendRes = await API.post("/auth/google", {
+          email: res.data.email,
+          name: res.data.name,
+          picture: res.data.picture,
+        });
+
+        localStorage.setItem("token", backendRes.data.token);
+        navigate("/dashboard");
+      } catch (err) {
+        console.error("Google login failed:", err);
+        setError("Google login failed");
+      }
+    },
+    onError: () => setError("Google login failed"),
+  });
+
   const handleGoogleLogin = () => {
-    alert("Google login not implemented yet.");
+    googleLogin();
   };
+
+  // ------------------ Placeholders for other social logins ------------------
   const handleEmailLogin = () => {
     alert("Email login (magic link) not implemented yet.");
   };
