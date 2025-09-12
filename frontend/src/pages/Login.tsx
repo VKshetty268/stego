@@ -28,9 +28,14 @@ const Login = () => {
 
       if (res.data?.token) {
         localStorage.setItem("token", res.data.token);
-      }
 
-      navigate("/dashboard");
+        // ✅ Check if user is admin
+        if (res.data.user.isAdmin) {
+          navigate("/admin");
+        } else {
+          navigate("/dashboard");
+        }
+      }
     } catch (err: any) {
       setError(err?.response?.data?.error || "Login failed");
     } finally {
@@ -59,7 +64,13 @@ const Login = () => {
         });
 
         localStorage.setItem("token", backendRes.data.token);
-        navigate("/dashboard");
+
+        // ✅ Redirect admin vs normal user
+        if (backendRes.data.user.isAdmin) {
+          navigate("/admin");
+        } else {
+          navigate("/dashboard");
+        }
       } catch (err) {
         console.error("Google login failed:", err);
         setError("Google login failed");

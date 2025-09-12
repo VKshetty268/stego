@@ -19,7 +19,7 @@ type FileDetails = {
   status?: string;
   detected?: boolean;
   severity?: string;
-  scan_elapsed_time?: string;
+  malware_scan_elapsed_time?: string; // 👈 updated here
   detections?: Detection[];
   mitigated?: boolean | null;
 };
@@ -78,9 +78,10 @@ const ResultItem: React.FC<Props> = ({ result }) => {
                     <strong>Severity:</strong> {d.severity}
                   </p>
                 )}
-                {d.scan_elapsed_time && (
+                {d.malware_scan_elapsed_time && ( // 👈 changed to malware_scan_elapsed_time
                   <p>
-                    <strong>Scan Time:</strong> {d.scan_elapsed_time}
+                    <strong>Malware Scan Time:</strong>{" "}
+                    {d.malware_scan_elapsed_time}
                   </p>
                 )}
                 {typeof d.mitigated !== "undefined" && (

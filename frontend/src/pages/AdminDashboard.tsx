@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import API from "../api/api";
 import * as XLSX from "xlsx";
+import { useNavigate } from "react-router-dom";
 
 interface UserData {
   _id: string;
@@ -15,6 +16,7 @@ interface UserData {
 const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState({ totalUsers: 0, totalScans: 0, threatsDetected: 0 });
   const [users, setUsers] = useState<UserData[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,23 +35,39 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   const exportToExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(users.map((u) => ({
-      Name: u.name || "N/A",
-      Email: u.email,
-      Organization: u.organization || "N/A",
-      "Files Scanned": u.filesScanned,
-      "Threats Detected": u.threatsDetected,
-      "Remaining Free Scans": u.remainingScans,
-    })));
+    const ws = XLSX.utils.json_to_sheet(
+      users.map((u) => ({
+        Name: u.name || "N/A",
+        Email: u.email,
+        Organization: u.organization || "N/A",
+        "Files Scanned": u.filesScanned,
+        "Threats Detected": u.threatsDetected,
+        "Remaining Free Scans": u.remainingScans,
+      }))
+    );
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Users");
     XLSX.writeFile(wb, "users.xlsx");
   };
 
+  const signOut = () => {
+    localStorage.removeItem("token");
+    navigate("/"); // go back to login page
+  };
+
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-green-400 to-teal-500 flex justify-center p-6">
+    <div className="w-full min-h-screen bg-gradient-to-br from-green-400 to-teal-500 flex justify-center p-6 overflow-y-auto">
       <div className="w-[95%] max-w-6xl bg-gray-900 text-white rounded-2xl shadow-lg p-6 flex flex-col gap-6">
-        <h2 className="text-2xl font-semibold">Dashboard Overview</h2>
+        {/* Header with title + sign out */}
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold">Admin Dashboard</h2>
+          <button
+            onClick={signOut}
+            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-sm font-medium"
+          >
+            Sign Out
+          </button>
+        </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-6">

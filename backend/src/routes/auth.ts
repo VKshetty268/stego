@@ -5,6 +5,11 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import auth from "../middleware/auth";
+import path from "path";
+import dotenv from "dotenv";
+
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+
 
 const router = express.Router();
 
@@ -36,6 +41,9 @@ router.post("/register", async (req, res) => {
       service: "Gmail",
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     });
+    console.log("EMAIL_USER:", process.env.EMAIL_USER);
+    console.log("EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
+
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
