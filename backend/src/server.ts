@@ -1,23 +1,49 @@
+import express from "express";
 import mongoose from "mongoose";
-import createApp from "./app";
 import dotenv from "dotenv";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import session from "express-session";
+
+// routes
+import authRoutes from "./routes/auth";
+import fileRoutes from "./routes/files";
+import adminRoutes from "./routes/admin";
+
 dotenv.config();
 
-console.log("🔍 Loaded MONGO_URI =", process.env.MONGO_URI);
+const app = express();
 
-async function main() {
-  try {
-    await mongoose.connect(process.env.MONGO_URI || "");
-    console.log(" Mongo connected at", process.env.MONGO_URI);
+// --- Middlewares ---
+app.use(express.json());
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: "http://localhost:5173", // adjust to frontend
+    credentials: true,
+  })
+);
 
-    const app = createApp();
-    const PORT = Number(process.env.PORT) || 4000;
-    app.listen(PORT, () => {
-      console.log(` API listening on http://localhost:${PORT}`);
-    });
-  } catch (err) {
-    console.error(" Mongo connection error:", err);
-  }
-}
+// --- Session middleware (fix for req.session undefined) ---
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "supersecret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false }, // set true if https + proxy
+  })
+);
 
-main();
+// --- Routes ---
+app.use("/api/auth", authRoutes);
+app.use("/api/files", fileRoutes);
+app.use("/api/admin", adminRoutes);
+
+// --- DB + server ---
+const PORT = process.env.PORT || 4000;
+mongoose
+  .connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/stego")
+  .then(() => {
+    app.listen(PORT, () => console.log(`API listening on http://localhost:${PORT}`));
+  })
+  .catch((err) => console.error("MongoDB connection failed", err));

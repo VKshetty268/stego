@@ -14,11 +14,13 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ open, onClose }) => {
       <div className="bg-gray-900 text-white rounded-xl shadow-lg p-6 max-w-md w-full">
         <h2 className="text-xl font-semibold mb-4">Upgrade to Premium</h2>
         <p className="text-gray-300 text-sm mb-4">
-          We’re glad you like our product!  
-          For additional capabilities such as auto-scanning and real-time protection, please contact our sales team at:  
+          If you’re worried that your images, videos, or documents may contain hidden data,
+          StegoEnterprise by WetStone Labs can detect steganography in many types of common media files.  
         </p>
         <p className="text-yellow-400 font-medium text-lg mb-4">
-          📞 (123) 456-7890
+          For more information beyond this trial:
+          Phone: (973) 818-9705
+          Email: sales@wetstonelabs.com
         </p>
         <div className="flex justify-end gap-3">
           <button

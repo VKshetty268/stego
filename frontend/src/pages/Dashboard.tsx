@@ -1,25 +1,24 @@
-// src/pages/Dashboard.tsx
 import React, { useEffect, useRef, useState } from "react";
-import { FaFolder, FaPlus } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import API from "../api/api";
-import UpgradeModal from "../components/upgradeModal"; // <-- import modal
-
-type ScanResult = { filename: string; status: "safe" | "malicious" };
+import ResultsList from "../components/ResultsList";
+import type { ScanResult } from "../components/ResultsList";
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const folderInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [stats, setStats] = useState({ scansToday: 0, threatsBlocked: 0 });
-  const [uploading, setUploading] = useState(false);
+  const [stats, setStats] = useState({ allScans: 0, threatsBlocked: 0, remainingScans: 50 });
   const [results, setResults] = useState<ScanResult[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<{ name?: string; email: string } | null>(
-    null
-  );
-  const [showUpgrade, setShowUpgrade] = useState(false); // <-- modal state
+  const [user, setUser] = useState<{ name?: string; email: string } | null>(null);
+
+  const [preview, setPreview] = useState<string | null>(null); // file preview thumbnail
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  // progress bar state
+  const [progress, setProgress] = useState(0);
+  const [scanning, setScanning] = useState(false);
 
   // --- Fetch stats
   const fetchStats = async () => {
@@ -51,54 +50,75 @@ const Dashboard: React.FC = () => {
     navigate("/");
   };
 
-  // --- File upload
-  const onSelectFiles = () => fileInputRef.current?.click();
-  const onFilesChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // --- File selection (do not scan immediately)
+  const onFilesChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
+    const file = e.target.files[0];
+    setSelectedFile(file);
+    setPreview(URL.createObjectURL(file));
     setError(null);
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      Array.from(e.target.files).forEach((f) => formData.append("files", f));
-      const res = await API.post("/files/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setResults(res.data.results || []);
-      await fetchStats();
-    } catch (err: any) {
-      setError(err?.response?.data?.error || "Upload failed");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // --- Drag & Drop
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      setSelectedFile(file);
+      setPreview(URL.createObjectURL(file));
+      setError(null);
     }
   };
 
-  // --- Folder upload
-  const onSelectFolder = () => folderInputRef.current?.click();
-  const onFolderChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.length) return;
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  // --- Scan button handler
+  const handleScan = async () => {
+    if (!selectedFile) return;
     setError(null);
-    setUploading(true);
+    setScanning(true);
+    setProgress(0);
+
+    // fake progress animation
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev < 90) return prev + 5;
+        return prev;
+      });
+    }, 300);
+
     try {
       const formData = new FormData();
-      Array.from(e.target.files).forEach((f) => formData.append("files", f));
+      formData.append("files", selectedFile);
+
       const res = await API.post("/files/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setResults(res.data.results || []);
+
+      setResults((prev) => [...res.data.results, ...prev]); // prepend new result
+      console.log("Scan API raw results:", res.data.results);
       await fetchStats();
+
+      setProgress(100);
     } catch (err: any) {
       setError(err?.response?.data?.error || "Upload failed");
     } finally {
-      setUploading(false);
-      if (folderInputRef.current) folderInputRef.current.value = "";
+      clearInterval(interval);
+      setTimeout(() => {
+        setScanning(false);
+        setProgress(0);
+        setPreview(null); // remove preview after scan
+        setSelectedFile(null);
+      }, 500);
     }
   };
 
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center p-6">
-      <div className="w-[95%] max-w-5xl bg-gray-900 text-white rounded-2xl shadow-lg p-6 flex flex-col gap-6">
-        {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-green-400 to-teal-500 flex justify-center p-6 overflow-y-auto">
+      <div className="w-[95%] max-w-6xl bg-gray-900 text-white rounded-2xl shadow-lg p-6 flex flex-col gap-6">
+        {/* Header with user info + stats */}
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-xl font-semibold">Welcome back</h2>
@@ -106,124 +126,107 @@ const Dashboard: React.FC = () => {
               {user?.name || user?.email || "Stego User"}
             </p>
           </div>
-          <button
-            onClick={signOut}
-            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-sm font-medium"
-          >
-            Sign Out
-          </button>
-        </div>
-
-        {/* Device Protected Card */}
-        <div className="bg-gray-800 p-6 rounded-xl shadow-md flex flex-col md:flex-row justify-between items-center gap-4">
-          <div>
-            <h3 className="text-lg font-semibold">Device Protected</h3>
-            <p className="text-gray-400 text-sm">No threats found today</p>
-          </div>
-          <div className="flex gap-6">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-400">
-                {stats.scansToday}
-              </p>
-              <p className="text-xs text-gray-400">Scans Today</p>
+          <div className="flex items-center gap-6">
+            <div className="bg-gray-800 px-4 py-2 rounded-lg flex gap-6">
+              <div className="text-center">
+                <p className="text-lg font-bold text-green-400">{stats.allScans}</p>
+                <p className="text-xs text-gray-400">Scans To-Date</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-red-400">{stats.threatsBlocked}</p>
+                <p className="text-xs text-gray-400">Threats Blocked</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-yellow-400">{stats.remainingScans}</p>
+                <p className="text-xs text-gray-400">Free Scans Left</p>
+              </div>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-red-400">
-                {stats.threatsBlocked}
-              </p>
-              <p className="text-xs text-gray-400">Threats Blocked</p>
-            </div>
+            <button
+              onClick={signOut}
+              className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-sm font-medium"
+            >
+              Sign Out
+            </button>
           </div>
         </div>
 
         {/* Upload Section */}
         <div className="bg-gray-800 p-6 rounded-xl shadow-md">
+          {/* Drag and drop + preview */}
+          <div
+            className="border-2 border-dashed border-gray-600 rounded-xl p-6 flex flex-col items-center justify-center text-gray-400"
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+          >
+            {preview ? (
+              <img
+                src={preview}
+                alt="Preview"
+                className="w-32 h-32 object-cover rounded-lg mb-3"
+              />
+            ) : (
+              <>
+                <p className="mb-2">Drag & drop a file here</p>
+                <p className="text-sm mb-3">or</p>
+              </>
+            )}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-4 py-2 bg-slate-600 rounded-lg hover:bg-slate-700"
+            >
+              Browse File
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={onFilesChosen}
+            />
+          </div>
+
+          {/* Scan Button */}
           <button
-            onClick={onSelectFiles}
-            disabled={uploading}
-            className={`w-full py-3 rounded-xl ${
-              uploading ? "bg-green-700" : "bg-green-500 hover:bg-green-600"
+            onClick={handleScan}
+            disabled={!selectedFile || scanning}
+            className={`w-full py-3 mt-4 rounded-xl ${
+              !selectedFile || scanning
+                ? "bg-green-700 cursor-not-allowed"
+                : "bg-green-500 hover:bg-green-600"
             } text-base font-medium`}
           >
-            {uploading ? "Scanning…" : "Select an Image"}
+            {scanning ? "Scanning…" : "Scan"}
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            multiple
-            onChange={onFilesChosen}
-          />
 
-          {error && <p className="text-red-400 mt-3 text-sm">{error}</p>}
-
-          {!!results.length && (
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {results.map((r, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between bg-gray-900 rounded-lg px-3 py-2"
-                >
-                  <span className="truncate mr-2">{r.filename}</span>
-                  <span
-                    className={`text-xs px-2 py-1 rounded ${
-                      r.status === "safe" ? "bg-green-700" : "bg-red-700"
-                    }`}
-                  >
-                    {r.status}
-                  </span>
-                </div>
-              ))}
+          {/* Progress Bar */}
+          {scanning && (
+            <div className="w-full h-2 bg-gray-700 rounded overflow-hidden mt-2">
+              <div
+                className="h-2 bg-green-500 transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              ></div>
             </div>
           )}
+
+          {error && <p className="text-red-400 mt-3 text-sm">{error}</p>}
         </div>
 
-        {/* Selected Folders */}
-        <div>
-          <h3 className="text-sm text-gray-400 mb-3">Selected Folders</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div
-              onClick={onSelectFolder}
-              className="bg-gray-800 p-4 rounded-xl shadow-md flex flex-col items-center cursor-pointer hover:bg-gray-700 border border-dashed border-gray-600"
-            >
-              <FaPlus className="text-2xl mb-2 text-yellow-400" />
-              <p className="font-medium text-yellow-400">Add Folder</p>
-              <p className="text-gray-400 text-sm">Premium</p>
-            </div>
-          </div>
-        </div>
+        {/* Results Section */}
+        <ResultsList results={results} />
 
-        <input
-          ref={folderInputRef}
-          type="file"
-          className="hidden"
-          multiple
-          onChange={onFolderChosen}
-          // @ts-ignore non-standard attributes
-          webkitdirectory=""
-          // @ts-ignore
-          directory=""
-        />
-
-        {/* Upgrade Banner */}
-        <div className="bg-yellow-600 p-5 rounded-xl shadow-md flex flex-col md:flex-row justify-between items-center">
-          <div>
-            <h3 className="font-semibold text-lg">Upgrade to Premium</h3>
-            <p className="text-sm text-yellow-100">
-              Auto-scan & real-time protection
-            </p>
-          </div>
-          <button
-            onClick={() => setShowUpgrade(true)}
-            className="mt-3 md:mt-0 px-6 py-2 bg-gray-900 rounded-lg hover:bg-gray-800"
-          >
-            Upgrade
-          </button>
+        {/* Info Banner */}
+        <div className="bg-yellow-600 p-5 rounded-xl shadow-md">
+          <h3 className="font-semibold text-lg">
+            If you’re worried that your images, videos, or documents may contain hidden data,
+            StegoEnterprise by WetStone Labs can detect steganography in many types of common
+            media files.
+          </h3>
+          <p className="text-sm text-yellow-100 mt-2">
+            For more information beyond this trial:<br />
+            Phone: (973) 818-9705<br />
+            Email: sales@wetstonelabs.com
+          </p>
         </div>
       </div>
-
-      {/* Upgrade Modal */}
-      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
     </div>
   );
 };

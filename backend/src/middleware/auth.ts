@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-export interface JwtPayloadShape { userId: string }
+export interface JwtPayloadShape {
+  userId: string;
+  isAdmin?: boolean;
+}
 
 export default function auth(req: Request, res: Response, next: NextFunction) {
   try {
@@ -12,8 +15,12 @@ export default function auth(req: Request, res: Response, next: NextFunction) {
 
     if (!token) return res.status(401).json({ error: "Auth token missing" });
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret") as JwtPayloadShape;
-    (req as any).user = { userId: decoded.userId };
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret"
+    ) as JwtPayloadShape;
+
+    (req as any).user = { userId: decoded.userId, isAdmin: decoded.isAdmin };
     return next();
   } catch {
     return res.status(401).json({ error: "Invalid or expired token" });

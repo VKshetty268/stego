@@ -5,6 +5,7 @@ import path from "path";
 
 import auth from "../middleware/auth";
 import Scan from "../models/Scan";
+import User from "../models/User";
 import { stegoScanSync, stegoScanAsync, stegoGetReport } from "../services/stegoClient";
 
 const router = Router();
@@ -13,10 +14,8 @@ const router = Router();
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 
-// --- allowed file types per Stego WEB APP guide (exclude DICOM explicitly)
-const ALLOWED = new Set([
-  ".jpg", ".jpeg", ".png", ".bmp"
-]);
+// --- allowed file types (exclude DICOM explicitly)
+const ALLOWED = new Set([".jpg", ".jpeg", ".png", ".bmp"]);
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),
@@ -43,15 +42,13 @@ function interpretReport(report: any): boolean {
     if (!files.length) return false;
 
     const f = files[0];
-
-    // malicious if detected true OR detections array not empty OR severity not Clean
     if (f.detected === true) return true;
     if (Array.isArray(f.detections) && f.detections.length > 0) return true;
     if (f.severity && f.severity.toLowerCase() !== "clean") return true;
 
     return false;
   } catch {
-    return true; // conservative fallback
+    return true;
   }
 }
 
@@ -63,23 +60,23 @@ router.post("/upload", auth, upload.array("files"), async (req, res) => {
 
   if (!files.length) return res.status(400).json({ error: "No files uploaded" });
 
-  const results: Array<{ filename: string; status: "safe" | "malicious" }> = [];
+  if (!(req as any).session.scanResults) {
+    (req as any).session.scanResults = [];
+  }
+
+  const newResults: any[] = []; // 🔑 collect only this batch
 
   try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
     for (const f of files) {
       try {
         let report: any = null;
-
         if (mode === "async") {
-          console.log("Starting async scan for:", f.originalname);
           const { job_id } = await stegoScanAsync(f.path, f.originalname);
-          console.log("Job ID:", job_id);
-
-          // simple polling loop
           for (let i = 0; i < 15; i++) {
             const r = await stegoGetReport(job_id, true);
-            console.log(`Async report poll #${i + 1} for ${f.originalname}:`, JSON.stringify(r, null, 2));
-
             if (r?.status === "In Progress") {
               await new Promise((r) => setTimeout(r, 2000));
               continue;
@@ -88,41 +85,51 @@ router.post("/upload", auth, upload.array("files"), async (req, res) => {
             break;
           }
         } else {
-          console.log("🚀 Starting sync scan for:", f.originalname);
           report = await stegoScanSync(f.path, f.originalname);
-          console.log("📄 Sync report for", f.originalname, ":", JSON.stringify(report, null, 2));
         }
 
         const detected = interpretReport(report);
         const status: "safe" | "malicious" = detected ? "malicious" : "safe";
 
-        await new Scan({
-          userId,
+        await new Scan({ userId, filename: f.originalname, status, rawReport: report }).save();
+
+        // update user stats
+        user.filesScanned += 1;
+        if (status === "malicious") user.threatsDetected += 1;
+        if (user.remainingScans > 0) user.remainingScans -= 1;
+
+        const resultObj = {
           filename: f.originalname,
           status,
-          rawReport: report,
-        }).save();
+          severity: report?.files?.[0]?.severity || "Unknown",
+          scanTime: report?.files?.[0]?.scan_elapsed_time || null,
+          details: report?.files?.[0] || {},
+        };
 
-        results.push({ filename: f.originalname, status });
+        // session keeps history
+        (req as any).session.scanResults.unshift(resultObj);
+
+        // batch results returned
+        newResults.unshift(resultObj);
       } catch (e: any) {
-        console.error("Scan failed for:", f.originalname);
-        console.error("Error message:", e?.message);
-        console.error("Error response:", e?.response?.data);
-
-        await new Scan({
-          userId,
+        const errObj = {
           filename: f.originalname,
           status: "malicious",
-          rawReport: { error: e?.message, response: e?.response?.data },
-        }).save();
-
-        results.push({ filename: f.originalname, status: "malicious" });
+          severity: "Error",
+          scanTime: null,
+          details: [{ finding: e?.message || "Scan failed", severity: "High", type: "error" }],
+        };
+        (req as any).session.scanResults.unshift(errObj);
+        newResults.unshift(errObj);
       } finally {
         fs.promises.unlink(f.path).catch(() => {});
       }
     }
 
-    return res.json({ results });
+    await user.save();
+
+    // 🔑 return only the new batch
+    return res.json({ results: newResults });
   } catch (err) {
     console.error("Upload handler error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -132,20 +139,16 @@ router.post("/upload", auth, upload.array("files"), async (req, res) => {
 // --- GET /api/files/stats
 router.get("/stats", auth, async (req, res) => {
   try {
-    const userId = req.user!.userId;
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
+    const user = await User.findById(req.user!.userId).select(
+      "filesScanned threatsDetected remainingScans"
+    );
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    const [scansToday, threatsBlocked] = await Promise.all([
-      Scan.countDocuments({ userId, createdAt: { $gte: start } }),
-      Scan.countDocuments({
-        userId,
-        createdAt: { $gte: start },
-        status: "malicious",
-      }),
-    ]);
-
-    res.json({ scansToday, threatsBlocked });
+    res.json({
+      allScans: user.filesScanned,
+      threatsBlocked: user.threatsDetected,
+      remainingScans: user.remainingScans,
+    });
   } catch (err) {
     console.error("Stats error:", err);
     res.status(500).json({ error: "Internal server error" });
