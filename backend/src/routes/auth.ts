@@ -7,8 +7,10 @@ import nodemailer from "nodemailer";
 import auth from "../middleware/auth";
 import path from "path";
 import dotenv from "dotenv";
+dotenv.config();
 
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
+
+// dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const router = express.Router();
 
@@ -34,8 +36,8 @@ router.post("/register", async (req, res) => {
       otpExpires: new Date(Date.now() + 10 * 60 * 1000),
     });
 
-    await user.save();
-
+    
+    console.log("TESTING EMAIL FUNCTIONALITY", process.env.EMAIL_USER )
     const transporter = nodemailer.createTransport({
       service: "Gmail",
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
@@ -48,7 +50,37 @@ router.post("/register", async (req, res) => {
       text: `Welcome to Stego! Your OTP is ${otp}. It will expire in 10 minutes.`,
     });
 
+
+//Uncomment the below Part to Enable email sending through Microsoft/Outlook accounts
+//     console.log("TESTING EMAIL FUNCTIONALITY", process.env.SMTP_USER )
+
+//     const transporter = nodemailer.createTransport({
+//   host: process.env.SMTP_HOST || "smtp.office365.com",
+//   port: parseInt(process.env.SMTP_PORT || "587", 10),
+//   secure: (process.env.SMTP_SECURE || "false") === "true", // false for 587 (STARTTLS)
+//   auth: {
+//     user: process.env.SMTP_USER!,
+//     pass: process.env.SMTP_PASS!,
+//   },
+//   // Optional but recommended for strict TLS:
+//   requireTLS: true,
+//   tls: { minVersion: "TLSv1.2" },
+// });
+
+// // (Optional) quick connectivity check on boot or just before send:
+// await transporter.verify().catch((e) => {
+//   console.error("SMTP verify failed:", e?.message || e);
+// });
+
+// await transporter.sendMail({
+//   from: process.env.SMTP_FROM || process.env.SMTP_USER,
+//   to: email,
+//   subject: "Verify your Stego account",
+//   text: `Welcome to Stego! Your OTP is ${otp}. It will expire in 10 minutes.`,
+// });
+
     res.json({ message: "User registered. Please verify OTP." });
+    await user.save();
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
