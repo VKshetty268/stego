@@ -10,7 +10,7 @@ const STEGO_BASE_URL =
   (process.env.STEGO_BASE_URL || "http://stegoe-stego-qvc3v54pb5af-21957659.us-east-1.elb.amazonaws.com")
     .replace(/\/+$/, "");
 
-const AGENT_IDENTIFIER_TOKEN = process.env.STEGO_AGENT_TOKEN; // one-time identifier token
+const AGENT_IDENTIFIER_TOKEN = process.env.STEGO_AGENT_TOKEN ; // one-time identifier token
 const AGENT_NAME = process.env.STEGO_AGENT_NAME || "WEBAPP";
 
 let cachedToken: string | null = null;
@@ -33,7 +33,8 @@ export async function getAuthToken(): Promise<{ token: string; expiration_time: 
     { headers: { "Content-Type": "application/json" } }
   );
 
-  console.log("✅ Token response:", response.data);
+  //Logging Token Response
+  // console.log("✅ Token response:", response.data);
 
   return response.data;
 }
@@ -66,12 +67,14 @@ export async function stegoScanSync(filePath: string, filename: string) {
   form.append("filename", filename);
   form.append("agent_name", AGENT_NAME); // ✅ required in body
 
-  console.log("🚀 Calling SYNC scan:", url);
-  console.log("📌 Headers:", {
-    Authorization: `Bearer ${token}`,
-    ...form.getHeaders(),
-    Accept: "application/json",
-  });
+
+  // Uncomment for logging in future
+  // console.log("🚀 Calling SYNC scan:", url);
+  // console.log("📌 Headers:", {
+  //   Authorization: `Bearer ${token}`,
+  //   ...form.getHeaders(),
+  //   Accept: "application/json",
+  // });
 
   const response = await axios.post(url, form, {
     headers: {

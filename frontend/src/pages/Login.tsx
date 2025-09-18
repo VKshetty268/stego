@@ -66,7 +66,10 @@ const Login = () => {
         localStorage.setItem("token", backendRes.data.token);
 
         // ✅ Redirect admin vs normal user
-        if (backendRes.data.user.isAdmin) {
+        // ✅ Handle onboarding vs normal login
+        if (backendRes.data.user.needsProfileCompletion) {
+          navigate("/google-onboarding");
+        } else if (backendRes.data.user.isAdmin) {
           navigate("/admin");
         } else {
           navigate("/dashboard");

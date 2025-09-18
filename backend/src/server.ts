@@ -27,7 +27,7 @@ app.use(
 // --- Session middleware (fix for req.session undefined) ---
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "supersecret",
+    secret: process.env.SESSION_SECRET|| "secret",
     resave: false,
     saveUninitialized: false,
     cookie: { secure: false }, // set true if https + proxy

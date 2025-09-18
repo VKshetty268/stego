@@ -4,6 +4,13 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import VerifyEmail from "./pages/VerifyEmail";
 import AdminDashboard from "./pages/AdminDashboard";
+import GoogleOnboarding from "./pages/GoogleOnboarding";
+
+// inside <Routes> ...
+
+
+
+
 
 function App() {
   return (
@@ -13,6 +20,7 @@ function App() {
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/google-onboarding" element={<GoogleOnboarding />} />
     </Routes>
   );
 }

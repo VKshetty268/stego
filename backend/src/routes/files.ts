@@ -6,9 +6,16 @@ import path from "path";
 import auth from "../middleware/auth";
 import Scan from "../models/Scan";
 import User from "../models/User";
+import dotenv from "dotenv";
+
 import { stegoScanSync, stegoScanAsync, stegoGetReport } from "../services/stegoClient";
 
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 const router = Router();
+
+console.log("FREE SCAN LIMIT", process.env.FREE_SCAN_LIMIT );
+// 🔑 Configurable free scan limit
+const FREE_SCAN_LIMIT = parseInt(process.env.FREE_SCAN_LIMIT || "50", 10);
 
 // --- uploads dir
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -70,6 +77,13 @@ router.post("/upload", auth, upload.array("files"), async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
+    // ✅ Enforce free scan limit before proceeding
+    if (user.remainingScans <= 0) {
+      return res.status(403).json({
+        error: `You have used up all your free scans (limit: ${FREE_SCAN_LIMIT}).`,
+      });
+    }
+
     for (const f of files) {
       try {
         let report: any = null;
@@ -91,7 +105,12 @@ router.post("/upload", auth, upload.array("files"), async (req, res) => {
         const detected = interpretReport(report);
         const status: "safe" | "malicious" = detected ? "malicious" : "safe";
 
-        await new Scan({ userId, filename: f.originalname, status, rawReport: report }).save();
+        await new Scan({
+          userId,
+          filename: f.originalname,
+          status,
+          rawReport: report,
+        }).save();
 
         // update user stats
         user.filesScanned += 1;
@@ -117,7 +136,13 @@ router.post("/upload", auth, upload.array("files"), async (req, res) => {
           status: "malicious",
           severity: "Error",
           scanTime: null,
-          details: [{ finding: e?.message || "Scan failed", severity: "High", type: "error" }],
+          details: [
+            {
+              finding: e?.message || "Scan failed",
+              severity: "High",
+              type: "error",
+            },
+          ],
         };
         (req as any).session.scanResults.unshift(errObj);
         newResults.unshift(errObj);

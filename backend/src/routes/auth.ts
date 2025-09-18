@@ -10,7 +10,6 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-
 const router = express.Router();
 
 // 📌 Register
@@ -41,9 +40,6 @@ router.post("/register", async (req, res) => {
       service: "Gmail",
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     });
-    console.log("EMAIL_USER:", process.env.EMAIL_USER);
-    console.log("EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
-
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
@@ -106,6 +102,7 @@ router.post("/login", async (req, res) => {
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin,
+        needsProfileCompletion: user.needsProfileCompletion,
       },
     });
   } catch (err) {
@@ -113,7 +110,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// 📌 Current user info (protected!)
+// 📌 Current user info
 router.get("/me", auth, async (req: any, res) => {
   try {
     const user = await User.findById(req.user.userId).select("-password");
@@ -135,8 +132,8 @@ router.post("/google", async (req, res) => {
       user = new User({
         name,
         email,
-        password: "",
         isVerified: true,
+        needsProfileCompletion: true, // ✅ mark for onboarding
       });
       await user.save();
     }
@@ -155,10 +152,32 @@ router.post("/google", async (req, res) => {
         email: user.email,
         isAdmin: user.isAdmin,
         picture,
+        phone: user.phone,
+        organization: user.organization,
+        needsProfileCompletion: user.needsProfileCompletion,
       },
     });
   } catch (err) {
     console.error("Google auth error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// 📌 Google onboarding (first-time only)
+router.post("/google-onboarding", auth, async (req: any, res) => {
+  try {
+    const { organization, phone } = req.body;
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    user.organization = organization;
+    user.phone = phone;
+    user.needsProfileCompletion = false; // ✅ mark onboarding complete
+    await user.save();
+
+    res.json({ message: "Profile updated" });
+  } catch (err) {
+    console.error("Google onboarding error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

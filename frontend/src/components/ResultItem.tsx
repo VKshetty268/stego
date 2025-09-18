@@ -19,7 +19,7 @@ type FileDetails = {
   status?: string;
   detected?: boolean;
   severity?: string;
-  malware_scan_elapsed_time?: string; // 👈 updated here
+  malware_scan_elapsed_time?: string; // 👈 we swapped earlier
   detections?: Detection[];
   mitigated?: boolean | null;
 };
@@ -29,11 +29,20 @@ type Props = {
     filename: string;
     status: "safe" | "malicious";
     details?: FileDetails | null;
+    previewUrl?: string | null; // 👈 new field for thumbnails
   };
 };
 
 const ResultItem: React.FC<Props> = ({ result }) => {
   const [expanded, setExpanded] = useState(false);
+
+  const thumbnail = result.previewUrl ? (
+    <img
+      src={result.previewUrl}
+      alt={result.filename}
+      className="w-10 h-10 object-cover rounded mr-3"
+    />
+  ) : null;
 
   if (result.status === "malicious") {
     const d = result.details;
@@ -44,7 +53,10 @@ const ResultItem: React.FC<Props> = ({ result }) => {
           className="w-full flex justify-between items-center text-left"
           onClick={() => setExpanded((v) => !v)}
         >
-          <span className="truncate pr-3 font-medium">{result.filename}</span>
+          <div className="flex items-center truncate pr-3 font-medium">
+            {thumbnail}
+            <span>{result.filename}</span>
+          </div>
           <div className="flex items-center gap-2">
             {expanded ? (
               <FaChevronUp className="text-gray-400" />
@@ -78,7 +90,7 @@ const ResultItem: React.FC<Props> = ({ result }) => {
                     <strong>Severity:</strong> {d.severity}
                   </p>
                 )}
-                {d.malware_scan_elapsed_time && ( // 👈 changed to malware_scan_elapsed_time
+                {d.malware_scan_elapsed_time && (
                   <p>
                     <strong>Malware Scan Time:</strong>{" "}
                     {d.malware_scan_elapsed_time}
@@ -120,7 +132,10 @@ const ResultItem: React.FC<Props> = ({ result }) => {
 
   return (
     <div className="bg-gray-900 rounded-lg p-2 mb-2 flex justify-between items-center">
-      <span className="truncate pr-3">{result.filename}</span>
+      <div className="flex items-center">
+        {thumbnail}
+        <span className="truncate pr-3">{result.filename}</span>
+      </div>
       <FaCheckCircle className="text-green-500" />
     </div>
   );

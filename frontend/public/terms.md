@@ -60,6 +60,5 @@ Continued use of the service after updates constitutes acceptance of the revised
 
 For any questions or concerns regarding these Terms, please contact us at:
 Stego Enterprise Sales & Support
-Email: support@stego.com
-
-Phone: +1 (000) 000-0000
+Phone: (973) 818-9705
+Email: sales@wetstonelabs.com

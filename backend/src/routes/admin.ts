@@ -1,56 +1,76 @@
 import express from "express";
 import User from "../models/User";
-import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import Scan from "../models/Scan";
+import auth from "../middleware/auth";
 
 const router = express.Router();
 
-// Middleware to check admin
-function adminAuth(req: Request, res: Response, next: NextFunction) {
+// Get all users with stats + last scan date
+router.get("/users", auth, async (req: any, res) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ error: "Unauthorized" });
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret") as {
-      id: string;
-      isAdmin: boolean;
-    };
-
-    if (!decoded.isAdmin) {
-      return res.status(403).json({ error: "Access denied. Admins only." });
+    if (!req.user?.isAdmin) {
+      return res.status(403).json({ error: "Forbidden" });
     }
 
-    (req as any).user = decoded;
-    next();
-  } catch {
-    res.status(401).json({ error: "Unauthorized" });
-  }
-}
+    // Fetch all users
+    const users = await User.find().select(
+      "name email phone organization filesScanned threatsDetected remainingScans"
+    );
 
-// --- Admin stats ---
-router.get("/stats", adminAuth, async (req, res) => {
-  try {
-    const totalUsers = await User.countDocuments();
-    const totalScans = await User.aggregate([{ $group: { _id: null, total: { $sum: "$filesScanned" } } }]);
-    const totalThreats = await User.aggregate([{ $group: { _id: null, total: { $sum: "$threatsDetected" } } }]);
+    // Fetch last scan dates
+    const lastScans = await Scan.aggregate([
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: "$userId",
+          lastScanAt: { $first: "$createdAt" },
+        },
+      },
+    ]);
 
-    res.json({
-      totalUsers,
-      totalScans: totalScans[0]?.total || 0,
-      threatsDetected: totalThreats[0]?.total || 0,
+    // Map userId → lastScanAt
+    const lastScanMap: Record<string, Date> = {};
+    lastScans.forEach((s) => {
+      lastScanMap[s._id] = s.lastScanAt;
     });
+
+    // Merge lastScanAt into user data
+    const enriched = users.map((u: any) => ({
+      _id: u._id,
+      name: u.name,
+      email: u.email,
+      phone: u.phone,
+      organization: u.organization,
+      filesScanned: u.filesScanned,
+      threatsDetected: u.threatsDetected,
+      remainingScans: u.remainingScans,
+      lastScanAt: lastScanMap[u._id.toString()] || null,
+    }));
+
+    console.log("Enriched users being returned:", enriched);
+
+    res.json(enriched);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch stats" });
+    console.error("Admin users error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-// --- User list for spreadsheet ---
-router.get("/users", adminAuth, async (req, res) => {
+// Get overall stats
+router.get("/stats", auth, async (req: any, res) => {
   try {
-    const users = await User.find().select("name email organization filesScanned threatsDetected remainingScans createdAt");
-    res.json(users);
-  } catch {
-    res.status(500).json({ error: "Failed to fetch users" });
+    if (!req.user?.isAdmin) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const totalUsers = await User.countDocuments();
+    const totalScans = await Scan.countDocuments();
+    const threatsDetected = await Scan.countDocuments({ status: "malicious" });
+
+    res.json({ totalUsers, totalScans, threatsDetected });
+  } catch (err) {
+    console.error("Admin stats error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 

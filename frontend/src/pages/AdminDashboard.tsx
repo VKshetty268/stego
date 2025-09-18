@@ -7,44 +7,55 @@ interface UserData {
   _id: string;
   name?: string;
   email: string;
+  phone?: string;
   organization?: string;
   filesScanned: number;
   threatsDetected: number;
   remainingScans: number;
+  lastScanAt?: string | null; // ISO string or null
 }
 
+const fmtDate = (iso?: string | null) =>
+  iso ? new Date(iso).toLocaleString() : "Never";
+
 const AdminDashboard: React.FC = () => {
-  const [stats, setStats] = useState({ totalUsers: 0, totalScans: 0, threatsDetected: 0 });
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalScans: 0,
+    threatsDetected: 0,
+  });
   const [users, setUsers] = useState<UserData[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const statsRes = await API.get("/admin/stats");
+        const [statsRes, usersRes] = await Promise.all([
+          API.get("/admin/stats"),
+          API.get("/admin/users"),
+        ]);
         setStats(statsRes.data);
-
-        const usersRes = await API.get("/admin/users");
-        setUsers(usersRes.data);
+        setUsers(usersRes.data || []);
       } catch (err) {
         console.error("Failed to load admin data", err);
+        setUsers([]);
       }
     };
-
     fetchData();
   }, []);
 
   const exportToExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(
-      users.map((u) => ({
-        Name: u.name || "N/A",
-        Email: u.email,
-        Organization: u.organization || "N/A",
-        "Files Scanned": u.filesScanned,
-        "Threats Detected": u.threatsDetected,
-        "Remaining Free Scans": u.remainingScans,
-      }))
-    );
+    const rows = users.map((u) => ({
+      Name: u.name || "N/A",
+      Email: u.email,
+      Phone: u.phone || "N/A",
+      Organization: u.organization || "N/A",
+      "Files Scanned": u.filesScanned ?? 0,
+      "Threats Detected": u.threatsDetected ?? 0,
+      "Remaining Free Scans": u.remainingScans ?? 0,
+      "Last Scan Date": fmtDate(u.lastScanAt),
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Users");
     XLSX.writeFile(wb, "users.xlsx");
@@ -52,7 +63,7 @@ const AdminDashboard: React.FC = () => {
 
   const signOut = () => {
     localStorage.removeItem("token");
-    navigate("/"); // go back to login page
+    navigate("/");
   };
 
   return (
@@ -92,10 +103,12 @@ const AdminDashboard: React.FC = () => {
               <tr className="text-gray-400 border-b border-gray-700">
                 <th className="px-4 py-2">Name</th>
                 <th className="px-4 py-2">Email</th>
+                <th className="px-4 py-2">Phone</th>
                 <th className="px-4 py-2">Organization</th>
                 <th className="px-4 py-2">Files Scanned</th>
                 <th className="px-4 py-2">Threats Detected</th>
                 <th className="px-4 py-2">Remaining Free Scans</th>
+                <th className="px-4 py-2">Last Scan Date</th>
               </tr>
             </thead>
             <tbody>
@@ -103,12 +116,21 @@ const AdminDashboard: React.FC = () => {
                 <tr key={u._id} className="border-b border-gray-700">
                   <td className="px-4 py-2">{u.name || "N/A"}</td>
                   <td className="px-4 py-2">{u.email}</td>
+                  <td className="px-4 py-2">{u.phone || "N/A"}</td>
                   <td className="px-4 py-2">{u.organization || "N/A"}</td>
-                  <td className="px-4 py-2">{u.filesScanned}</td>
-                  <td className="px-4 py-2">{u.threatsDetected}</td>
-                  <td className="px-4 py-2">{u.remainingScans}</td>
+                  <td className="px-4 py-2">{u.filesScanned ?? 0}</td>
+                  <td className="px-4 py-2">{u.threatsDetected ?? 0}</td>
+                  <td className="px-4 py-2">{u.remainingScans ?? 0}</td>
+                  <td className="px-4 py-2">{fmtDate(u.lastScanAt)}</td>
                 </tr>
               ))}
+              {!users.length && (
+                <tr>
+                  <td className="px-4 py-4 text-gray-400" colSpan={8}>
+                    No users found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

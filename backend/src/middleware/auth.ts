@@ -1,28 +1,31 @@
+// src/middleware/auth.ts
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-export interface JwtPayloadShape {
-  userId: string;
-  isAdmin?: boolean;
+// Extend Express Request type to include user
+export interface AuthRequest extends Request {
+  user?: { userId: string; isAdmin?: boolean };
 }
 
-export default function auth(req: Request, res: Response, next: NextFunction) {
+export default function auth(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const hdr = req.headers.authorization;
-    const token =
-      (hdr && hdr.startsWith("Bearer ") && hdr.split(" ")[1]) ||
-      (req.cookies && (req.cookies.token as string));
+    // Get token from header
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ error: "No token, authorization denied" });
+    }
 
-    if (!token) return res.status(401).json({ error: "Auth token missing" });
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret") as {
+      userId: string;
+      isAdmin?: boolean;
+    };
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "secret"
-    ) as JwtPayloadShape;
-
-    (req as any).user = { userId: decoded.userId, isAdmin: decoded.isAdmin };
-    return next();
-  } catch {
-    return res.status(401).json({ error: "Invalid or expired token" });
+    // Attach user info to request
+    req.user = decoded;
+    next();
+  } catch (err) {
+    console.error("Auth middleware error:", err);
+    return res.status(401).json({ error: "Token is not valid" });
   }
 }

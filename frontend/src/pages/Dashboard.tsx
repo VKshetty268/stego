@@ -97,7 +97,14 @@ const Dashboard: React.FC = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setResults((prev) => [...res.data.results, ...prev]); // prepend new result
+      const enrichedResults = res.data.results.map((r: any) => ({
+  ...r,
+  previewUrl: selectedFile && selectedFile.type.startsWith("image/")
+    ? URL.createObjectURL(selectedFile)
+    : null,
+}));
+
+      setResults((prev) => [...enrichedResults, ...prev]); // prepend new result
       console.log("Scan API raw results:", res.data.results);
       await fetchStats();
 
@@ -225,6 +232,14 @@ const Dashboard: React.FC = () => {
             Phone: (973) 818-9705<br />
             Email: sales@wetstonelabs.com
           </p>
+
+          {/* Contact Sales Button */}
+          <a
+            href="mailto:sales@wetstonelabs.com?subject=Inquiry%20about%20StegoEnterprise"
+            className="inline-block mt-4 px-5 py-2 bg-white text-yellow-700 font-medium rounded-lg shadow hover:bg-yellow-100"
+          >
+            Contact Sales
+          </a>
         </div>
       </div>
     </div>

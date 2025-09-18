@@ -4,10 +4,16 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import User from '../src/models/User'; // path to your User model
 
+
 async function main() {
-  const mongo = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/stego';
-  const email = process.env.ADMIN_EMAIL || 'admin@example.com';
-  const password = process.env.ADMIN_PASSWORD || 'AdminPassword123';
+  const mongo: string | undefined = process.env.MONGO_URI;
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!mongo) {
+    console.error('Database URI missing');
+    process.exit(1);
+  }
 
   if (!email || !password) {
     console.error('❌ ADMIN_EMAIL and ADMIN_PASSWORD must be set in .env');
