@@ -46,8 +46,35 @@ router.post("/register", async (req, res) => {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Verify your Stego account",
-      text: `Welcome to Stego! Your OTP is ${otp}. It will expire in 10 minutes.`,
+      subject: "Your StegoEnterprise Trial OTP Code",
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h2>Welcome to StegoEnterprise Trial</h2>
+          <p>Thank you for signing up for the <strong>StegoEnterprise trial platform</strong>.</p>
+          <p>Your new One-Time Password (OTP) is:</p>
+          <h1 style="color: #2d6cdf; letter-spacing: 3px;">${otp}</h1>
+          <p>Please enter this code in the app to verify your email address. This code will expire in 10 minutes.</p>
+
+          <hr style="margin:20px 0;"/>
+
+          <p>
+            With this free trial, you can scan your images, videos, and documents 
+            to detect hidden or malicious content. To continue beyond your trial or 
+            to secure your organization, please contact our sales team for the full 
+            version of StegoEnterprise.
+          </p>
+
+          <p>
+            <strong>Contact Sales:</strong><br/>
+            Phone: (973) 818-9705<br/>
+            Email: sales@wetstonelabs.com
+          </p>
+
+          <p style="font-size: 12px; color: #777;">
+            If you did not request this code, please ignore this email.
+          </p>
+        </div>
+      `,
     });
 
 
@@ -88,13 +115,33 @@ router.post("/register", async (req, res) => {
 });
 
 // 📌 Verify OTP
+// 📌 Verify OTP
 router.post("/verify-otp", async (req, res) => {
   try {
     const { email, otp } = req.body;
     const user = await User.findOne({ email });
 
     if (!user) return res.status(400).json({ error: "User not found" });
-    if (user.isVerified) return res.json({ message: "Already verified" });
+    if (user.isVerified) {
+      // If already verified, just mint a token for a seamless experience
+      const token = jwt.sign(
+        { userId: user._id, isAdmin: user.isAdmin },
+        process.env.JWT_SECRET || "secret",
+        { expiresIn: "1d" }
+      );
+      return res.json({
+        message: "Already verified",
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          isAdmin: user.isAdmin,
+          needsProfileCompletion: user.needsProfileCompletion,
+        },
+      });
+    }
+
     if (user.otp !== otp || !user.otpExpires || user.otpExpires < new Date()) {
       return res.status(400).json({ error: "Invalid or expired OTP" });
     }
@@ -104,8 +151,26 @@ router.post("/verify-otp", async (req, res) => {
     user.otpExpires = undefined;
     await user.save();
 
-    res.json({ message: "Email verified successfully" });
+    const token = jwt.sign(
+      { userId: user._id, isAdmin: user.isAdmin },
+      process.env.JWT_SECRET || "secret",
+      { expiresIn: "1d" }
+    );
+
+    // ⬇️ Return the same shape as /auth/login for consistency
+    res.json({
+      message: "Email verified successfully",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        needsProfileCompletion: user.needsProfileCompletion,
+      },
+    });
   } catch (err) {
+    console.error("verify-otp error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -210,6 +275,69 @@ router.post("/google-onboarding", auth, async (req: any, res) => {
     res.json({ message: "Profile updated" });
   } catch (err) {
     console.error("Google onboarding error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// 📌 Resend OTP
+router.post("/resend-otp", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) return res.status(400).json({ error: "User not found" });
+    if (user.isVerified) return res.status(400).json({ error: "User already verified" });
+
+    // generate new OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    user.otp = otp;
+    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
+
+    // transporter
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    });
+
+    // 📧 trial-context email
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Your StegoEnterprise Trial OTP Code",
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h2>Welcome to StegoEnterprise Trial</h2>
+          <p>Thank you for signing up for the <strong>StegoEnterprise trial platform</strong>.</p>
+          <p>Your new One-Time Password (OTP) is:</p>
+          <h1 style="color: #2d6cdf; letter-spacing: 3px;">${otp}</h1>
+          <p>Please enter this code in the app to verify your email address. This code will expire in 10 minutes.</p>
+
+          <hr style="margin:20px 0;"/>
+
+          <p>
+            With this free trial, you can scan your images, videos, and documents 
+            to detect hidden or malicious content. To continue beyond your trial or 
+            to secure your organization, please contact our sales team for the full 
+            version of StegoEnterprise.
+          </p>
+
+          <p>
+            <strong>Contact Sales:</strong><br/>
+            Phone: (973) 818-9705<br/>
+            Email: sales@wetstonelabs.com
+          </p>
+
+          <p style="font-size: 12px; color: #777;">
+            If you did not request this code, please ignore this email.
+          </p>
+        </div>
+      `,
+    });
+
+    res.json({ message: "A new OTP has been sent to your email" });
+  } catch (err) {
+    console.error("Resend OTP error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

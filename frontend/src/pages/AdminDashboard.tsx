@@ -12,7 +12,7 @@ interface UserData {
   filesScanned: number;
   threatsDetected: number;
   remainingScans: number;
-  lastScanAt?: string | null; // ISO string or null
+  lastScanAt?: string | null;
 }
 
 const fmtDate = (iso?: string | null) =>
@@ -67,14 +67,14 @@ const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-green-400 to-teal-500 flex justify-center p-6 overflow-y-auto">
-      <div className="w-[95%] max-w-6xl bg-gray-900 text-white rounded-2xl shadow-lg p-6 flex flex-col gap-6">
+    <div className="w-full min-h-screen bg-gray-50 flex justify-center p-6 overflow-y-auto">
+      <div className="w-[95%] max-w-6xl bg-white text-gray-900 rounded-2xl shadow-lg p-6 flex flex-col gap-6 border border-gray-200">
         {/* Header with title + sign out */}
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-semibold">Admin Dashboard</h2>
           <button
             onClick={signOut}
-            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-sm font-medium"
+            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium"
           >
             Sign Out
           </button>
@@ -82,25 +82,31 @@ const AdminDashboard: React.FC = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-          <div className="bg-gray-800 p-4 rounded-lg text-center">
-            <p className="text-lg">Total Users</p>
-            <p className="text-2xl font-bold text-blue-400">{stats.totalUsers}</p>
+          <div className="bg-gray-100 p-4 rounded-lg text-center border border-gray-200">
+            <p className="text-sm text-gray-600">Total Users</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {stats.totalUsers}
+            </p>
           </div>
-          <div className="bg-gray-800 p-4 rounded-lg text-center">
-            <p className="text-lg">Total Scans</p>
-            <p className="text-2xl font-bold text-yellow-400">{stats.totalScans}</p>
+          <div className="bg-gray-100 p-4 rounded-lg text-center border border-gray-200">
+            <p className="text-sm text-gray-600">Total Scans</p>
+            <p className="text-2xl font-bold text-yellow-600">
+              {stats.totalScans}
+            </p>
           </div>
-          <div className="bg-gray-800 p-4 rounded-lg text-center">
-            <p className="text-lg">Threats Detected</p>
-            <p className="text-2xl font-bold text-red-400">{stats.threatsDetected}</p>
+          <div className="bg-gray-100 p-4 rounded-lg text-center border border-gray-200">
+            <p className="text-sm text-gray-600">Threats Detected</p>
+            <p className="text-2xl font-bold text-red-600">
+              {stats.threatsDetected}
+            </p>
           </div>
         </div>
 
         {/* Users Table */}
-        <div className="overflow-x-auto bg-gray-800 p-4 rounded-lg">
+        <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg shadow-sm">
           <table className="table-auto w-full text-left text-sm">
             <thead>
-              <tr className="text-gray-400 border-b border-gray-700">
+              <tr className="bg-gray-100 text-gray-600 border-b border-gray-200">
                 <th className="px-4 py-2">Name</th>
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Phone</th>
@@ -113,7 +119,10 @@ const AdminDashboard: React.FC = () => {
             </thead>
             <tbody>
               {users.map((u) => (
-                <tr key={u._id} className="border-b border-gray-700">
+                <tr
+                  key={u._id}
+                  className="border-b border-gray-200 hover:bg-gray-50"
+                >
                   <td className="px-4 py-2">{u.name || "N/A"}</td>
                   <td className="px-4 py-2">{u.email}</td>
                   <td className="px-4 py-2">{u.phone || "N/A"}</td>
@@ -126,7 +135,10 @@ const AdminDashboard: React.FC = () => {
               ))}
               {!users.length && (
                 <tr>
-                  <td className="px-4 py-4 text-gray-400" colSpan={8}>
+                  <td
+                    className="px-4 py-4 text-gray-500 text-center"
+                    colSpan={8}
+                  >
                     No users found.
                   </td>
                 </tr>
@@ -138,7 +150,7 @@ const AdminDashboard: React.FC = () => {
         {/* Export Button */}
         <button
           onClick={exportToExcel}
-          className="self-end mt-3 px-6 py-2 bg-green-500 rounded-lg hover:bg-green-600"
+          className="self-end mt-3 px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
         >
           Export to Excel
         </button>

@@ -24,7 +24,7 @@ const GoogleOnboarding = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      navigate("/dashboard"); // ✅ only first time
+      navigate("/dashboard");
     } catch (err: any) {
       setError(err?.response?.data?.error || "Failed to save details");
     } finally {
@@ -33,20 +33,25 @@ const GoogleOnboarding = () => {
   };
 
   return (
-    <div className="w-full h-screen flex items-center justify-center">
-      <div className="w-[90%] max-w-sm md:max-w-md p-5 bg-gray-900 text-white flex-col flex items-center gap-3 rounded-xl shadow-slate-500 shadow-lg">
-        <h1 className="text-lg md:text-xl font-semibold">Complete Your Profile</h1>
-        <p className="text-xs md:text-sm text-gray-400 text-center">
+    <div className="w-full h-screen flex items-center justify-center bg-white p-4">
+      <div className="w-[90%] max-w-sm md:max-w-md p-6 bg-white text-black flex flex-col items-center gap-4 rounded-2xl shadow-lg border border-gray-200">
+        
+        {/* Title */}
+        <h1 className="text-xl md:text-2xl font-bold text-center text-gray-900">
+          Complete Your Profile
+        </h1>
+        <p className="text-sm md:text-base text-gray-600 text-center">
           Please provide your phone and organization to continue
         </p>
 
-        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3 mt-2">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4 mt-2">
           <input
             type="text"
             placeholder="Phone Number"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="p-2 rounded-lg bg-gray-800 outline-none"
+            className="p-3 rounded-lg border border-gray-300 outline-none text-sm md:text-base focus:ring-2 focus:ring-green-500 transition"
             required
           />
           <input
@@ -54,16 +59,22 @@ const GoogleOnboarding = () => {
             placeholder="Organization"
             value={organization}
             onChange={(e) => setOrganization(e.target.value)}
-            className="p-2 rounded-lg bg-gray-800 outline-none"
+            className="p-3 rounded-lg border border-gray-300 outline-none text-sm md:text-base focus:ring-2 focus:ring-green-500 transition"
             required
           />
 
+          {/* Error */}
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full p-2 bg-green-500 rounded-xl mt-3 hover:bg-green-600 text-sm md:text-base"
+            className={`w-full p-3 rounded-xl mt-3 text-sm md:text-base font-medium text-white ${
+              loading
+                ? "bg-green-700 cursor-not-allowed"
+                : "bg-green-500 hover:bg-green-600"
+            } transition`}
           >
             {loading ? "Saving..." : "Continue"}
           </button>

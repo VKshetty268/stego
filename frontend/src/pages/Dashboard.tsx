@@ -8,29 +8,40 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [stats, setStats] = useState({ allScans: 0, threatsBlocked: 0, remainingScans: 50 });
+  const [stats, setStats] = useState({
+    allScans: 0,
+    threatsBlocked: 0,
+    remainingScans: 50,
+  });
   const [results, setResults] = useState<ScanResult[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<{ name?: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ name?: string; email: string } | null>(
+    null
+  );
 
-  const [preview, setPreview] = useState<string | null>(null); // file preview thumbnail
+  const [preview, setPreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // progress bar state
   const [progress, setProgress] = useState(0);
   const [scanning, setScanning] = useState(false);
 
-  // --- Fetch stats
+  // toggle for supported file types list
+  const [showFileTypes, setShowFileTypes] = useState(false);
+  const [showLimitPopup, setShowLimitPopup] = useState(false);
+
+  useEffect(() => {
+    if (stats.remainingScans <= 0) {
+      setShowLimitPopup(true);
+    }
+  }, [stats.remainingScans]);
+
   const fetchStats = async () => {
     try {
       const res = await API.get("/files/stats");
       setStats(res.data);
-    } catch {
-      // silent fail
-    }
+    } catch { }
   };
 
-  // --- Fetch user
   const fetchUser = async () => {
     try {
       const res = await API.get("/auth/me");
@@ -50,7 +61,6 @@ const Dashboard: React.FC = () => {
     navigate("/");
   };
 
-  // --- File selection (do not scan immediately)
   const onFilesChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
     const file = e.target.files[0];
@@ -59,7 +69,6 @@ const Dashboard: React.FC = () => {
     setError(null);
   };
 
-  // --- Drag & Drop
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
@@ -74,14 +83,12 @@ const Dashboard: React.FC = () => {
     e.preventDefault();
   };
 
-  // --- Scan button handler
   const handleScan = async () => {
     if (!selectedFile) return;
     setError(null);
     setScanning(true);
     setProgress(0);
 
-    // fake progress animation
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev < 90) return prev + 5;
@@ -97,60 +104,93 @@ const Dashboard: React.FC = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      const enrichedResults = res.data.results.map((r: any) => ({
-  ...r,
-  previewUrl: selectedFile && selectedFile.type.startsWith("image/")
-    ? URL.createObjectURL(selectedFile)
-    : null,
-}));
-
-      setResults((prev) => [...enrichedResults, ...prev]); // prepend new result
-      console.log("Scan API raw results:", res.data.results);
+      setResults((prev) => [...res.data.results, ...prev]);
       await fetchStats();
 
       setProgress(100);
     } catch (err: any) {
-      setError(err?.response?.data?.error || "Upload failed");
+      const backendError = err?.response?.data?.error;
+
+      if (backendError?.toLowerCase().includes("unsupported file type")) {
+        setError("This file type is not supported. Please upload a supported file.");
+      } else {
+        setError(backendError || "Upload failed. Please try again.");
+      }
     } finally {
       clearInterval(interval);
       setTimeout(() => {
         setScanning(false);
         setProgress(0);
-        setPreview(null); // remove preview after scan
+        setPreview(null);
         setSelectedFile(null);
       }, 500);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-400 to-teal-500 flex justify-center p-6 overflow-y-auto">
-      <div className="w-[95%] max-w-6xl bg-gray-900 text-white rounded-2xl shadow-lg p-6 flex flex-col gap-6">
+    <div className="min-h-screen bg-gray-50 flex justify-center p-6 overflow-y-auto">
+      <div className="w-[95%] max-w-6xl bg-white text-gray-900 rounded-2xl shadow-md p-8 flex flex-col gap-6 border border-gray-200">
+        {/* Top Section with Contact + File Types */}
+        <div className="bg-gray-100 p-5 rounded-lg border border-gray-200">
+          <h3 className="font-semibold text-lg mb-2">
+            If you’re worried that your images, videos, or documents may contain
+            hidden data, StegoEnterprise by WetStone Labs can detect
+            steganography in many types of common media files. Use this trial to
+            see how it works and test your files below.
+          </h3>
+
+          {/* Toggle File Types */}
+          <button
+            onClick={() => setShowFileTypes(!showFileTypes)}
+            className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            {showFileTypes
+              ? "Hide Supported File Types"
+              : "Show Supported File Types"}
+          </button>
+          {showFileTypes && (
+            <div className="mt-3 text-sm text-gray-700 space-y-1">
+              <p>
+                JPEG, BMP, GIF, PNG, WAV, MP3, JPEG 2000, TIFF, PCX, 3GP, M4V,
+                M4A, MOV, MP4, AVI, FLV, MPG/MPEG, ASF, OLE, MS Office Files,
+                PDF, ICO, ELF, SWF, EXE, WEBM, OGG, NES, TEXT
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Header with user info + stats */}
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-xl font-semibold">Welcome back</h2>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-500 text-sm">
               {user?.name || user?.email || "Stego User"}
             </p>
           </div>
           <div className="flex items-center gap-6">
-            <div className="bg-gray-800 px-4 py-2 rounded-lg flex gap-6">
+            <div className="bg-gray-100 px-6 py-3 rounded-lg flex gap-6 border border-gray-200">
               <div className="text-center">
-                <p className="text-lg font-bold text-green-400">{stats.allScans}</p>
-                <p className="text-xs text-gray-400">Scans To-Date</p>
+                <p className="text-lg font-bold text-green-600">
+                  {stats.allScans}
+                </p>
+                <p className="text-xs text-gray-500">Scans To-Date</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold text-red-400">{stats.threatsBlocked}</p>
-                <p className="text-xs text-gray-400">Threats Blocked</p>
+                <p className="text-lg font-bold text-red-500">
+                  {stats.threatsBlocked}
+                </p>
+                <p className="text-xs text-gray-500">Threats Blocked</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold text-yellow-400">{stats.remainingScans}</p>
-                <p className="text-xs text-gray-400">Free Scans Left</p>
+                <p className="text-lg font-bold text-yellow-500">
+                  {stats.remainingScans}
+                </p>
+                <p className="text-xs text-gray-500">Free Scans Left</p>
               </div>
             </div>
             <button
               onClick={signOut}
-              className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-sm font-medium"
+              className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-sm font-medium text-white"
             >
               Sign Out
             </button>
@@ -158,10 +198,9 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Upload Section */}
-        <div className="bg-gray-800 p-6 rounded-xl shadow-md">
-          {/* Drag and drop + preview */}
+        <div className="bg-gray-100 p-6 rounded-xl border border-gray-200">
           <div
-            className="border-2 border-dashed border-gray-600 rounded-xl p-6 flex flex-col items-center justify-center text-gray-400"
+            className="border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-gray-500"
             onDrop={handleDrop}
             onDragOver={handleDragOver}
           >
@@ -179,7 +218,7 @@ const Dashboard: React.FC = () => {
             )}
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 bg-slate-600 rounded-lg hover:bg-slate-700"
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
             >
               Browse File
             </button>
@@ -191,57 +230,75 @@ const Dashboard: React.FC = () => {
             />
           </div>
 
-          {/* Scan Button */}
           <button
             onClick={handleScan}
             disabled={!selectedFile || scanning}
-            className={`w-full py-3 mt-4 rounded-xl ${
-              !selectedFile || scanning
-                ? "bg-green-700 cursor-not-allowed"
-                : "bg-green-500 hover:bg-green-600"
-            } text-base font-medium`}
+            className={`w-full py-3 mt-4 rounded-lg font-medium text-white ${!selectedFile || scanning
+              ? "bg-green-300 cursor-not-allowed"
+              : "bg-green-600 hover:bg-green-700"
+              }`}
           >
             {scanning ? "Scanning…" : "Scan"}
           </button>
 
-          {/* Progress Bar */}
           {scanning && (
-            <div className="w-full h-2 bg-gray-700 rounded overflow-hidden mt-2">
+            <div className="w-full h-2 bg-gray-200 rounded overflow-hidden mt-2">
               <div
-                className="h-2 bg-green-500 transition-all duration-300"
+                className="h-2 bg-green-600 transition-all duration-300"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
           )}
 
-          {error && <p className="text-red-400 mt-3 text-sm">{error}</p>}
+          {error && <p className="text-red-500 mt-3 text-sm">{error}</p>}
         </div>
 
         {/* Results Section */}
-        <ResultsList results={results} />
+        <div className="flex-1 gap-6 min-h-0">
+          <ResultsList results={results} />
+        </div>
 
-        {/* Info Banner */}
-        <div className="bg-yellow-600 p-5 rounded-xl shadow-md">
-          <h3 className="font-semibold text-lg">
-            If you’re worried that your images, videos, or documents may contain hidden data,
-            StegoEnterprise by WetStone Labs can detect steganography in many types of common
-            media files.
-          </h3>
-          <p className="text-sm text-yellow-100 mt-2">
-            For more information beyond this trial:<br />
-            Phone: (973) 818-9705<br />
+        {/* Contact Section */}
+        <div className="bg-gradient-to-b from-blue-500 to-blue-800 p-5 rounded-xl shadow-md">
+          <h3 className="font-semibold text-lg text-white">Contact Sales</h3>
+          <p className="text-sm text-blue-100 mt-2">
+            For more information beyond this trial: <br />
+            Phone: (973) 818-9705 <br />
             Email: sales@wetstonelabs.com
           </p>
-
-          {/* Contact Sales Button */}
-          <a
-            href="mailto:sales@wetstonelabs.com?subject=Inquiry%20about%20StegoEnterprise"
-            className="inline-block mt-4 px-5 py-2 bg-white text-yellow-700 font-medium rounded-lg shadow hover:bg-yellow-100"
+          <button
+            onClick={() => window.location.href = "mailto:sales@wetstonelabs.com"}
+            className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
           >
             Contact Sales
-          </a>
+          </button>
         </div>
       </div>
+
+      {/* Persistent Popup when scans are exhausted */}
+      {showLimitPopup && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+          <div className="bg-white text-black rounded-xl shadow-xl p-8 max-w-lg w-full text-center pointer-events-auto border border-gray-200">
+            <h2 className="text-2xl font-bold mb-4">
+              You have reached your free scan limit
+            </h2>
+            <p className="text-gray-600 mb-3">
+              Thank you for using the StegoEnterprise trial platform.
+            </p>
+            <p className="text-gray-600 mb-3">
+              To continue scanning files, or if you believe your system may
+              contain hidden or infected content, please contact our sales team
+              to learn more about the full version of StegoEnterprise for your
+              organization.
+            </p>
+            <div className="text-gray-800 font-medium mt-4">
+              <p>Contact Sales:</p>
+              <p>Phone: (973) 818-9705</p>
+              <p>Email: sales@wetstonelabs.com</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

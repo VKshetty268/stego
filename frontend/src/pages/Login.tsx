@@ -25,16 +25,10 @@ const Login = () => {
 
     try {
       const res = await API.post("/auth/login", { email, password });
-
       if (res.data?.token) {
         localStorage.setItem("token", res.data.token);
-
-        // ✅ Check if user is admin
-        if (res.data.user.isAdmin) {
-          navigate("/admin");
-        } else {
-          navigate("/dashboard");
-        }
+        if (res.data.user.isAdmin) navigate("/admin");
+        else navigate("/dashboard");
       }
     } catch (err: any) {
       setError(err?.response?.data?.error || "Login failed");
@@ -43,7 +37,6 @@ const Login = () => {
     }
   };
 
-  // ------------------ Handle Register Navigation ------------------
   const handleSubmitRegister = (e: React.FormEvent) => {
     e.preventDefault();
     navigate("/register");
@@ -65,15 +58,9 @@ const Login = () => {
 
         localStorage.setItem("token", backendRes.data.token);
 
-        // ✅ Redirect admin vs normal user
-        // ✅ Handle onboarding vs normal login
-        if (backendRes.data.user.needsProfileCompletion) {
-          navigate("/google-onboarding");
-        } else if (backendRes.data.user.isAdmin) {
-          navigate("/admin");
-        } else {
-          navigate("/dashboard");
-        }
+        if (backendRes.data.user.needsProfileCompletion) navigate("/google-onboarding");
+        else if (backendRes.data.user.isAdmin) navigate("/admin");
+        else navigate("/dashboard");
       } catch (err) {
         console.error("Google login failed:", err);
         setError("Google login failed");
@@ -87,65 +74,83 @@ const Login = () => {
   };
 
   return (
-    <div className="w-full h-screen flex items-center justify-center">
-      <div className="w-[90%] max-w-sm md:max-w-md p-5 bg-gray-900 flex-col flex items-center gap-3 rounded-xl shadow-slate-500 shadow-lg">
-        {/* Logo */}
-        <img src="./public/vite.svg" alt="Logo" className="w-12 md:w-14" />
-        <h1 className="text-lg md:text-xl font-semibold">Welcome to Stego</h1>
-        <p className="text-xs md:text-sm text-gray-500 text-center">
-          Dont have an Account?{" "}
-          <span onClick={handleSubmitRegister} className="text-white cursor-pointer">
+    <div className="w-full h-screen flex items-center justify-center bg-white">
+      <div className="w-[90%] max-w-sm md:max-w-md p-8 bg-white flex-col flex items-center gap-5 rounded-xl shadow-lg border border-gray-200">
+        
+
+                {/* Logo */}
+        <img
+          src="/Wet-Stone-Logo-Black.png"
+          alt="Wetstone Logo"
+          className="w-48 md:w-56 mb-2"
+        />
+
+        <img
+          src="/StegoEnterprise_MAIN_Logo.png"
+          alt="StegoEnterprise Logo"
+          className="w-48 md:w-56 mb-2"
+        />
+
+
+
+        <h2 className="text-2xl font-bold text-gray-900">Sign in to StegoEnterprise</h2>
+
+        <p className="text-sm text-gray-500 text-center">
+          Don’t have an account?{" "}
+          <span
+            onClick={handleSubmitRegister}
+            className="text-green-600 cursor-pointer font-medium hover:underline"
+          >
             Sign up
           </span>
         </p>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3 mt-2">
+        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4 mt-3">
           {/* Email */}
-          <div className="w-full flex items-center bg-gray-800 p-2 rounded-xl gap-2">
-            <MdEmail className="text-white" />
+          <div className="w-full flex items-center border border-gray-300 rounded-lg px-3 py-2 bg-white">
+            <MdEmail className="text-gray-500" />
             <input
               type="email"
-              placeholder="Email account"
+              placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-transparent border-0 w-full outline-none text-sm md:text-base text-white"
+              className="bg-transparent border-0 w-full outline-none text-sm md:text-base text-gray-900 ml-2"
               required
             />
           </div>
 
           {/* Password */}
-          <div className="w-full flex items-center bg-gray-800 p-2 rounded-xl gap-2 relative">
-            <FaFingerprint className="text-white" />
+          <div className="w-full flex items-center border border-gray-300 rounded-lg px-3 py-2 bg-white relative">
+            <FaFingerprint className="text-gray-500" />
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="bg-transparent border-0 w-full outline-none text-sm md:text-base text-white"
+              className="bg-transparent border-0 w-full outline-none text-sm md:text-base text-gray-900 ml-2"
               required
             />
             {showPassword ? (
               <FaEye
-                className="absolute right-5 cursor-pointer text-white"
+                className="absolute right-3 cursor-pointer text-gray-500"
                 onClick={togglePasswordVisibility}
               />
             ) : (
               <FaEyeSlash
-                className="absolute right-5 cursor-pointer text-white"
+                className="absolute right-3 cursor-pointer text-gray-500"
                 onClick={togglePasswordVisibility}
               />
             )}
           </div>
 
-          {/* Error */}
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
           {/* Login Button */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full p-2 bg-green-500 rounded-xl mt-3 hover:bg-green-600 text-sm md:text-base"
+            className="w-full p-3 bg-green-600 text-white rounded-lg mt-2 hover:bg-green-700 font-medium"
           >
             {loading ? "Logging in…" : "Login"}
           </button>
@@ -153,18 +158,18 @@ const Login = () => {
 
         {/* Divider */}
         <div className="relative w-full flex items-center justify-center py-3">
-          <div className="w-2/3 h-[2px] bg-gray-800"></div>
-          <h3 className="text-xs md:text-sm px-4 text-gray-500">Or</h3>
-          <div className="w-2/3 h-[2px] bg-gray-800"></div>
+          <div className="w-2/5 h-[1px] bg-gray-300"></div>
+          <h3 className="text-xs md:text-sm px-3 text-gray-400">Or</h3>
+          <div className="w-2/5 h-[1px] bg-gray-300"></div>
         </div>
 
-        {/* Google Only Button (stretched full width) */}
-        <div className="relative w-full py-3">
+        {/* Google Login */}
+        <div className="relative w-full">
           <button
             onClick={handleGoogleLogin}
-            className="flex items-center justify-center gap-2 w-full p-3 bg-slate-600 cursor-pointer rounded-xl hover:bg-slate-700"
+            className="flex items-center justify-center gap-2 w-full p-3 bg-gray-100 border border-gray-300 text-gray-700 cursor-pointer rounded-lg hover:bg-gray-200 font-medium"
           >
-            <FaGoogle className="text-lg md:text-xl" />
+            <FaGoogle className="text-lg md:text-xl text-red-500" />
             <span className="text-sm md:text-base">Continue with Google</span>
           </button>
         </div>

@@ -19,7 +19,7 @@ type FileDetails = {
   status?: string;
   detected?: boolean;
   severity?: string;
-  malware_scan_elapsed_time?: string; // 👈 we swapped earlier
+  malware_scan_elapsed_time?: string;
   detections?: Detection[];
   mitigated?: boolean | null;
 };
@@ -29,9 +29,14 @@ type Props = {
     filename: string;
     status: "safe" | "malicious";
     details?: FileDetails | null;
-    previewUrl?: string | null; // 👈 new field for thumbnails
+    previewUrl?: string | null;
   };
 };
+
+// helper to sanitize filenames
+function safeFilename(name: string) {
+  return name.normalize("NFKD").replace(/×/g, "x");
+}
 
 const ResultItem: React.FC<Props> = ({ result }) => {
   const [expanded, setExpanded] = useState(false);
@@ -39,7 +44,7 @@ const ResultItem: React.FC<Props> = ({ result }) => {
   const thumbnail = result.previewUrl ? (
     <img
       src={result.previewUrl}
-      alt={result.filename}
+      alt={safeFilename(result.filename)}
       className="w-10 h-10 object-cover rounded mr-3"
     />
   ) : null;
@@ -48,27 +53,27 @@ const ResultItem: React.FC<Props> = ({ result }) => {
     const d = result.details;
 
     return (
-      <div className="bg-gray-900 rounded-lg p-2 mb-2 border border-red-500">
+      <div className="bg-white rounded-lg p-3 mb-2 border border-red-300 shadow-sm">
         <button
           className="w-full flex justify-between items-center text-left"
           onClick={() => setExpanded((v) => !v)}
         >
-          <div className="flex items-center truncate pr-3 font-medium">
+          <div className="flex items-center truncate pr-3 font-medium text-red-700">
             {thumbnail}
-            <span>{result.filename}</span>
+            <span>{safeFilename(result.filename)}</span>
           </div>
           <div className="flex items-center gap-2">
             {expanded ? (
-              <FaChevronUp className="text-gray-400" />
+              <FaChevronUp className="text-gray-500" />
             ) : (
-              <FaChevronDown className="text-gray-400" />
+              <FaChevronDown className="text-gray-500" />
             )}
-            <FaTimesCircle className="text-red-500" />
+            <FaTimesCircle className="text-red-600" />
           </div>
         </button>
 
         {expanded && (
-          <div className="mt-2 text-xs text-gray-300 space-y-1 border-t border-gray-700 pt-2">
+          <div className="mt-2 text-xs text-gray-600 space-y-1 border-t border-gray-200 pt-2">
             {d ? (
               <>
                 {d.file_type && (
@@ -131,12 +136,12 @@ const ResultItem: React.FC<Props> = ({ result }) => {
   }
 
   return (
-    <div className="bg-gray-900 rounded-lg p-2 mb-2 flex justify-between items-center">
-      <div className="flex items-center">
+    <div className="bg-white rounded-lg p-3 mb-2 flex justify-between items-center border border-green-200 shadow-sm">
+      <div className="flex items-center text-green-700 font-medium">
         {thumbnail}
-        <span className="truncate pr-3">{result.filename}</span>
+        <span className="truncate pr-3">{safeFilename(result.filename)}</span>
       </div>
-      <FaCheckCircle className="text-green-500" />
+      <FaCheckCircle className="text-green-600" />
     </div>
   );
 };

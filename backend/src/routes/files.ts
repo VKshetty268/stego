@@ -1,3 +1,4 @@
+// backend/src/routes/files.ts
 import { Router } from "express";
 import multer from "multer";
 import fs from "fs";
@@ -6,23 +7,26 @@ import path from "path";
 import auth from "../middleware/auth";
 import Scan from "../models/Scan";
 import User from "../models/User";
-import dotenv from "dotenv";
-
 import { stegoScanSync, stegoScanAsync, stegoGetReport } from "../services/stegoClient";
 
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
 const router = Router();
-
-console.log("FREE SCAN LIMIT", process.env.FREE_SCAN_LIMIT );
-// 🔑 Configurable free scan limit
-const FREE_SCAN_LIMIT = parseInt(process.env.FREE_SCAN_LIMIT || "50", 10);
 
 // --- uploads dir
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 
-// --- allowed file types (exclude DICOM explicitly)
-const ALLOWED = new Set([".jpg", ".jpeg", ".png", ".bmp"]);
+const ALLOWED = new Set([
+  // Images
+  ".jpg", ".jpeg", ".j2k", ".jp2", ".bmp", ".gif", ".png", ".tif", ".tiff", ".pcx", ".ico",
+  // Audio
+  ".wav", ".mp3", ".m4a", ".ogg",
+  // Video
+  ".3gp", ".m4v", ".mov", ".mp4", ".avi", ".flv", ".mpg", ".mpeg", ".asf", ".webm",
+  // Documents
+  ".ole", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pdf", ".txt",
+  // Executables / binaries
+  ".exe", ".elf", ".swf", ".nes",
+]);
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),
@@ -37,9 +41,9 @@ const upload = multer({
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     if (ALLOWED.has(ext)) cb(null, true);
-    else cb(new Error(`Unsupported file type: ${ext}`));
+    else cb(new Error(`Unsupported file type: ${ext}. Only .dcm files are allowed.`));
   },
-  limits: { fileSize: 25 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024 }, // bump limit if DICOM files are large
 });
 
 // --- normalize Stego report into safe/malicious
@@ -66,23 +70,17 @@ router.post("/upload", auth, upload.array("files"), async (req, res) => {
   const files = (req.files as Express.Multer.File[]) || [];
 
   if (!files.length) return res.status(400).json({ error: "No files uploaded" });
+  
 
   if (!(req as any).session.scanResults) {
     (req as any).session.scanResults = [];
   }
 
-  const newResults: any[] = []; // 🔑 collect only this batch
+  const newResults: any[] = [];
 
   try {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
-
-    // ✅ Enforce free scan limit before proceeding
-    if (user.remainingScans <= 0) {
-      return res.status(403).json({
-        error: `You have used up all your free scans (limit: ${FREE_SCAN_LIMIT}).`,
-      });
-    }
 
     for (const f of files) {
       try {
@@ -105,12 +103,7 @@ router.post("/upload", auth, upload.array("files"), async (req, res) => {
         const detected = interpretReport(report);
         const status: "safe" | "malicious" = detected ? "malicious" : "safe";
 
-        await new Scan({
-          userId,
-          filename: f.originalname,
-          status,
-          rawReport: report,
-        }).save();
+        await new Scan({ userId, filename: f.originalname, status, rawReport: report }).save();
 
         // update user stats
         user.filesScanned += 1;
@@ -121,14 +114,11 @@ router.post("/upload", auth, upload.array("files"), async (req, res) => {
           filename: f.originalname,
           status,
           severity: report?.files?.[0]?.severity || "Unknown",
-          scanTime: report?.files?.[0]?.scan_elapsed_time || null,
+          scanTime: report?.files?.[0]?.malware_scan_elapsed_time || null, // 🔑 switched to malware_scan_elapsed_time if needed
           details: report?.files?.[0] || {},
         };
 
-        // session keeps history
         (req as any).session.scanResults.unshift(resultObj);
-
-        // batch results returned
         newResults.unshift(resultObj);
       } catch (e: any) {
         const errObj = {
@@ -136,13 +126,7 @@ router.post("/upload", auth, upload.array("files"), async (req, res) => {
           status: "malicious",
           severity: "Error",
           scanTime: null,
-          details: [
-            {
-              finding: e?.message || "Scan failed",
-              severity: "High",
-              type: "error",
-            },
-          ],
+          details: [{ finding: e?.message || "Scan failed", severity: "High", type: "error" }],
         };
         (req as any).session.scanResults.unshift(errObj);
         newResults.unshift(errObj);
@@ -152,8 +136,6 @@ router.post("/upload", auth, upload.array("files"), async (req, res) => {
     }
 
     await user.save();
-
-    // 🔑 return only the new batch
     return res.json({ results: newResults });
   } catch (err) {
     console.error("Upload handler error:", err);
