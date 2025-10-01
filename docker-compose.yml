@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: stego_mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"   # optional for local tools
+
+  backend:
+    build:
+      context: ./backend
+    container_name: stego_backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env     # local/dev env (not committed)
+      - ./.env.compose     # shared non-secret vars (optional)
+    environment:
+      # override MONGO_URI to point at the compose mongo service
+      MONGO_URI: mongodb://mongo:27017/stego
+      PORT: 4000
+      # If your server uses CORS, make origin configurable:
+      CORS_ORIGIN: http://localhost:8080,http://localhost
+    depends_on:
+      - mongo
+    ports:
+      - "4000:4000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: "http://backend:4000/api"
+    container_name: stego_frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:

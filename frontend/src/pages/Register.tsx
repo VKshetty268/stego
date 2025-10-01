@@ -81,6 +81,12 @@ const Register = () => {
     <div className="w-full h-screen flex items-center justify-center bg-white">
       <div className="w-[90%] max-w-sm md:max-w-md p-8 bg-white flex-col flex items-center gap-5 rounded-xl shadow-lg border border-gray-200">
         {/* Logo */}
+
+        <img
+          src="/Wet-Stone-Logo-Black.png"
+          alt="Wetstone Logo"
+          className="w-48 md:w-56 mb-2"
+        />
         <img
           src="/StegoEnterprise_MAIN_Logo.png"
           alt="StegoEnterprise Logo"

@@ -4,9 +4,13 @@ import API from "../api/api";
 import ResultsList from "../components/ResultsList";
 import type { ScanResult } from "../components/ResultsList";
 
+
+
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
   const [stats, setStats] = useState({
     allScans: 0,
@@ -21,7 +25,7 @@ const Dashboard: React.FC = () => {
 
   const [preview, setPreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
+  
   const [progress, setProgress] = useState(0);
   const [scanning, setScanning] = useState(false);
 
@@ -56,10 +60,10 @@ const Dashboard: React.FC = () => {
     fetchUser();
   }, []);
 
-  const signOut = () => {
-    localStorage.removeItem("token");
-    navigate("/");
-  };
+  // const signOut = () => {
+  //   localStorage.removeItem("token");
+  //   navigate("/");
+  // };
 
   const onFilesChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
@@ -88,7 +92,7 @@ const Dashboard: React.FC = () => {
     setError(null);
     setScanning(true);
     setProgress(0);
-
+    
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev < 90) return prev + 5;
@@ -140,14 +144,12 @@ const Dashboard: React.FC = () => {
           </h3>
 
           {/* Toggle File Types */}
-          <button
+          <p
             onClick={() => setShowFileTypes(!showFileTypes)}
-            className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            className="mt-3 text-green-600 hover:underline cursor-pointer font-medium"
           >
-            {showFileTypes
-              ? "Hide Supported File Types"
-              : "Show Supported File Types"}
-          </button>
+            {showFileTypes ? "Hide Supported File Types" : "Show Supported File Types"}
+          </p>
           {showFileTypes && (
             <div className="mt-3 text-sm text-gray-700 space-y-1">
               <p>
@@ -189,7 +191,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
             <button
-              onClick={signOut}
+              onClick={() => setShowSignOutConfirm(true)}
               className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-sm font-medium text-white"
             >
               Sign Out
@@ -276,30 +278,72 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Persistent Popup when scans are exhausted */}
-      {showLimitPopup && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-          <div className="bg-white text-black rounded-xl shadow-xl p-8 max-w-lg w-full text-center pointer-events-auto border border-gray-200">
-            <h2 className="text-2xl font-bold mb-4">
-              You have reached your free scan limit
-            </h2>
-            <p className="text-gray-600 mb-3">
-              Thank you for using the StegoEnterprise trial platform.
-            </p>
-            <p className="text-gray-600 mb-3">
-              To continue scanning files, or if you believe your system may
-              contain hidden or infected content, please contact our sales team
-              to learn more about the full version of StegoEnterprise for your
-              organization.
-            </p>
-            <div className="text-gray-800 font-medium mt-4">
-              <p>Contact Sales:</p>
-              <p>Phone: (973) 818-9705</p>
-              <p>Email: sales@wetstonelabs.com</p>
-            </div>
-          </div>
-        </div>
-      )}
+     {/* Persistent Popup when scans are exhausted */}
+{showLimitPopup && (
+  <div className="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-40">
+    <div className="bg-white text-black rounded-xl shadow-xl p-8 max-w-lg w-full text-center border border-gray-200">
+      <h2 className="text-2xl font-bold mb-4">
+        You have reached your free scan limit
+      </h2>
+      <p className="text-gray-600 mb-3">
+        Thank you for using the StegoEnterprise trial platform.
+      </p>
+      <p className="text-gray-600 mb-3">
+        To continue scanning files, or if you believe your system may
+        contain hidden or infected content, please contact our sales team
+        to learn more about the full version of StegoEnterprise for your
+        organization.
+      </p>
+      <div className="text-gray-800 font-medium mt-4 mb-6">
+        <p>Contact Sales:</p>
+        <p>Phone: (973) 818-9705</p>
+        <p>Email: sales@wetstonelabs.com</p>
+      </div>
+      {/* ✅ Close button that signs out */}
+      <button
+        onClick={() => {
+          localStorage.removeItem("token");
+          navigate("/");
+        }}
+        className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+      >
+        Close
+      </button>
     </div>
+  </div>
+)}
+      {/* Sign Out Confirmation Modal */}
+{showSignOutConfirm && (
+  <div className="fixed inset-0 flex items-center justify-center z-60 bg-black bg-opacity-40">
+    <div className="bg-white text-gray-900 rounded-xl shadow-xl p-6 max-w-md w-full text-center">
+      <h2 className="text-lg font-semibold mb-3">
+        Are you sure you want to sign out?
+      </h2>
+      <p className="text-sm text-gray-600 mb-4">
+        If you sign out now, the scan results from this session will be erased.
+      </p>
+      <div className="flex justify-center gap-4">
+        <button
+          onClick={() => {
+            localStorage.removeItem("token");
+            navigate("/");
+          }}
+          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+        >
+          Yes, Sign Out
+        </button>
+        <button
+          onClick={() => setShowSignOutConfirm(false)}
+          className="px-4 py-2 bg-gray-300 text-gray-900 rounded-lg hover:bg-gray-400"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+    </div>
+
   );
 };
 
