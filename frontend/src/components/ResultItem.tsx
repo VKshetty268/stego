@@ -10,7 +10,6 @@ type Detection = {
   finding: string;
   severity: string;
   type: string;
-  mitigated?: boolean;
 };
 
 type FileDetails = {
@@ -21,7 +20,6 @@ type FileDetails = {
   severity?: string;
   malware_scan_elapsed_time?: string;
   detections?: Detection[];
-  mitigated?: boolean | null;
 };
 
 type Props = {
@@ -101,16 +99,6 @@ const ResultItem: React.FC<Props> = ({ result }) => {
                     {d.malware_scan_elapsed_time}
                   </p>
                 )}
-                {typeof d.mitigated !== "undefined" && (
-                  <p>
-                    <strong>Mitigated:</strong>{" "}
-                    {d.mitigated === true
-                      ? "Yes"
-                      : d.mitigated === false
-                      ? "No"
-                      : "N/A"}
-                  </p>
-                )}
 
                 {d.detections && d.detections.length > 0 && (
                   <div className="mt-2">
@@ -118,8 +106,8 @@ const ResultItem: React.FC<Props> = ({ result }) => {
                     <ul className="list-disc ml-5">
                       {d.detections.map((f, i) => (
                         <li key={i}>
-                          {f.finding} ({f.severity}, {f.type}, mitigated:{" "}
-                          {f.mitigated ? "Yes" : "No"})
+                          {f.finding} ({f.severity}, {f.type}
+                          )
                         </li>
                       ))}
                     </ul>

@@ -46,11 +46,11 @@ router.post("/register", async (req, res) => {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Your StegoEnterprise Trial OTP Code",
+      subject: "Your StegoEnterprise Test-Drive OTP Code",
       html: `
         <div style="font-family: Arial, sans-serif; color: #333;">
-          <h2>Welcome to StegoEnterprise Trial</h2>
-          <p>Thank you for signing up for the <strong>StegoEnterprise trial platform</strong>.</p>
+          <h2>Welcome to StegoEnterprise Test-Drive</h2>
+          <p>Thank you for signing up for the <strong>StegoEnterprise Test-Drive platform</strong>.</p>
           <p>Your new One-Time Password (OTP) is:</p>
           <h1 style="color: #2d6cdf; letter-spacing: 3px;">${otp}</h1>
           <p>Please enter this code in the app to verify your email address. This code will expire in 10 minutes.</p>
@@ -58,8 +58,8 @@ router.post("/register", async (req, res) => {
           <hr style="margin:20px 0;"/>
 
           <p>
-            With this free trial, you can scan your images, videos, and documents 
-            to detect hidden or malicious content. To continue beyond your trial or 
+            With this free test-drive, you can scan your images, videos, and documents 
+            to detect hidden or malicious content. To continue beyond your test-drive or 
             to secure your organization, please contact our sales team for the full 
             version of StegoEnterprise.
           </p>
@@ -304,11 +304,11 @@ router.post("/resend-otp", async (req, res) => {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Your StegoEnterprise Trial OTP Code",
+      subject: "Your StegoEnterprise Test-Drive OTP Code",
       html: `
         <div style="font-family: Arial, sans-serif; color: #333;">
-          <h2>Welcome to StegoEnterprise Trial</h2>
-          <p>Thank you for signing up for the <strong>StegoEnterprise trial platform</strong>.</p>
+          <h2>Welcome to StegoEnterprise Test-Drive</h2>
+          <p>Thank you for signing up for the <strong>StegoEnterprise Test-Drive platform</strong>.</p>
           <p>Your new One-Time Password (OTP) is:</p>
           <h1 style="color: #2d6cdf; letter-spacing: 3px;">${otp}</h1>
           <p>Please enter this code in the app to verify your email address. This code will expire in 10 minutes.</p>
@@ -316,8 +316,8 @@ router.post("/resend-otp", async (req, res) => {
           <hr style="margin:20px 0;"/>
 
           <p>
-            With this free trial, you can scan your images, videos, and documents 
-            to detect hidden or malicious content. To continue beyond your trial or 
+            With this free test-drive, you can scan your images, videos, and documents 
+            to detect hidden or malicious content. To continue beyond your test-drive or 
             to secure your organization, please contact our sales team for the full 
             version of StegoEnterprise.
           </p>

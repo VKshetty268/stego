@@ -12,6 +12,8 @@ const Dashboard: React.FC = () => {
 
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
+  
+
   const [stats, setStats] = useState({
     allScans: 0,
     threatsBlocked: 0,
@@ -65,23 +67,59 @@ const Dashboard: React.FC = () => {
   //   navigate("/");
   // };
 
-  const onFilesChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.length) return;
-    const file = e.target.files[0];
-    setSelectedFile(file);
-    setPreview(URL.createObjectURL(file));
-    setError(null);
-  };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      setSelectedFile(file);
-      setPreview(URL.createObjectURL(file));
-      setError(null);
+  // ✅ Return preview: real thumbnail for images, placeholder for others
+const getPreviewForFile = (file: File) => {
+  if (file.type.startsWith("image/")) {
+    return URL.createObjectURL(file); // works for png, jpg, etc.
+  } else {
+    return "/File-Thumbnail.png"; // make sure to add this to your /public folder
+  }
+};
+
+  // ✅ Supported file extensions (same as your backend supports)
+const SUPPORTED_EXTENSIONS = [
+  ".jpeg", ".jpg", ".bmp", ".gif", ".png", ".wav", ".mp3", ".jp2", ".tif", ".tiff",
+  ".pcx", ".3gp", ".m4v", ".m4a", ".mov", ".mp4", ".avi", ".flv", ".mpg", ".mpeg",
+  ".asf", ".ole", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pdf", ".ico",
+  ".elf", ".swf", ".exe", ".webm", ".ogg", ".nes", ".txt"
+];
+
+
+const isSupportedFile = (file: File) => {
+  const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+  return SUPPORTED_EXTENSIONS.includes(ext);
+};
+
+// inside onFilesChosen:
+const onFilesChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (!e.target.files?.length) return;
+  const file = e.target.files[0];
+
+  if (!isSupportedFile(file)) {
+    setError("Unsupported file type. Please upload a supported file.");
+    return;
+  }
+
+  setSelectedFile(file);
+  setPreview(getPreviewForFile(file));
+  setError(null);
+};
+
+// inside handleDrop:
+const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    if (!isSupportedFile(file)) {
+      setError("Unsupported file type. Please upload a supported file.");
+      return;
     }
-  };
+    setSelectedFile(file);
+    setPreview(getPreviewForFile(file));
+    setError(null);
+  }
+};
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -133,33 +171,43 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex justify-center p-6 overflow-y-auto">
-      <div className="w-[95%] max-w-6xl bg-white text-gray-900 rounded-2xl shadow-md p-8 flex flex-col gap-6 border border-gray-200">
-        {/* Top Section with Contact + File Types */}
-        <div className="bg-gray-100 p-5 rounded-lg border border-gray-200">
-          <h3 className="font-semibold text-lg mb-2">
-            If you’re worried that your images, videos, or documents may contain
-            hidden data, StegoEnterprise by WetStone Labs can detect
-            steganography in many types of common media files. Use this trial to
-            see how it works and test your files below.
-          </h3>
+  <div className="w-[95%] max-w-6xl bg-white text-gray-900 rounded-2xl shadow-md p-8 flex flex-col gap-6 border border-gray-200">
 
-          {/* Toggle File Types */}
-          <p
-            onClick={() => setShowFileTypes(!showFileTypes)}
-            className="mt-3 text-green-600 hover:underline cursor-pointer font-medium"
-          >
-            {showFileTypes ? "Hide Supported File Types" : "Show Supported File Types"}
+    {/* ✅ Logo at the top */}
+    <div className="flex justify-center mb-4">
+      <img
+        src="/Wet-Stone-Logo-Black.png"
+        alt="WetStone Logo"
+        className="h-12 md:h-16 object-contain"
+      />
+    </div>
+
+    {/* Top Section with Contact + File Types */}
+    <div className="bg-gray-100 p-5 rounded-lg border border-gray-200">
+      <h3 className="font-semibold text-lg mb-2">
+        If you’re worried that your images, videos, or documents may contain
+        hidden data, StegoEnterprise by WetStone Labs can detect
+        steganography in many types of common media files. Use this trial to
+        see how it works and test your files below.
+      </h3>
+
+      {/* Toggle File Types */}
+      <p
+        onClick={() => setShowFileTypes(!showFileTypes)}
+        className="mt-3 text-green-600 hover:underline cursor-pointer font-medium"
+      >
+        {showFileTypes ? "Hide Supported File Types" : "Show Supported File Types"}
+      </p>
+      {showFileTypes && (
+        <div className="mt-3 text-sm text-gray-700 space-y-1">
+          <p>
+            JPEG, BMP, GIF, PNG, WAV, MP3, JPEG 2000, TIFF, PCX, 3GP, M4V,
+            M4A, MOV, MP4, AVI, FLV, MPG/MPEG, ASF, OLE, MS Office Files,
+            PDF, ICO, ELF, SWF, EXE, WEBM, OGG, NES, TEXT
           </p>
-          {showFileTypes && (
-            <div className="mt-3 text-sm text-gray-700 space-y-1">
-              <p>
-                JPEG, BMP, GIF, PNG, WAV, MP3, JPEG 2000, TIFF, PCX, 3GP, M4V,
-                M4A, MOV, MP4, AVI, FLV, MPG/MPEG, ASF, OLE, MS Office Files,
-                PDF, ICO, ELF, SWF, EXE, WEBM, OGG, NES, TEXT
-              </p>
-            </div>
-          )}
         </div>
+      )}
+    </div>
 
         {/* Header with user info + stats */}
         <div className="flex justify-between items-center">

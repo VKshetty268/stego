@@ -8,6 +8,7 @@ import {
   FaUser,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import zxcvbn from "zxcvbn";   // ✅ Password strength library
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -20,6 +21,9 @@ const Register = () => {
     confirmPassword: "",
   });
 
+  const [passwordScore, setPasswordScore] = useState(0);
+  const [passwordFeedback, setPasswordFeedback] = useState<string[]>([]);
+
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [termsText, setTermsText] = useState<string>("Loading terms...");
@@ -31,7 +35,14 @@ const Register = () => {
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData({ ...formData, [e.target.name]: e.target.value });
+
+    if (name === "password") {
+      const analysis = zxcvbn(value);
+      setPasswordScore(analysis.score);
+      setPasswordFeedback(analysis.feedback.suggestions);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,6 +53,12 @@ const Register = () => {
       setError("Passwords do not match");
       return;
     }
+
+    if (passwordScore < 3) {
+      setError("Password is too weak. Please make it stronger.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -163,30 +180,70 @@ const Register = () => {
             />
           </div>
 
-          {/* Password */}
-          <div className="w-full flex items-center border border-gray-300 rounded-lg px-3 py-2 bg-white relative">
-            <FaFingerprint className="text-gray-500" />
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              placeholder="Password"
-              value={formData.password}
-              onChange={handleChange}
-              className="bg-transparent border-0 w-full outline-none text-sm md:text-base text-gray-900 ml-2"
-              required
-            />
-            {showPassword ? (
-              <FaEye
-                className="absolute right-3 cursor-pointer text-gray-500"
-                onClick={togglePasswordVisibility}
-              />
-            ) : (
-              <FaEyeSlash
-                className="absolute right-3 cursor-pointer text-gray-500"
-                onClick={togglePasswordVisibility}
-              />
-            )}
-          </div>
+            {/* Password */}
+  <div className="w-full flex flex-col gap-1">
+    <div className="flex items-center border border-gray-300 rounded-lg px-3 py-2 bg-white relative">
+      <FaFingerprint className="text-gray-500" />
+      <input
+        type={showPassword ? "text" : "password"}
+        name="password"
+        placeholder="Password"
+        value={formData.password}
+        onChange={handleChange}
+        className="bg-transparent border-0 w-full outline-none text-sm md:text-base text-gray-900 ml-2"
+        required
+      />
+      {showPassword ? (
+        <FaEye
+          className="absolute right-3 cursor-pointer text-gray-500"
+          onClick={togglePasswordVisibility}
+        />
+      ) : (
+        <FaEyeSlash
+          className="absolute right-3 cursor-pointer text-gray-500"
+          onClick={togglePasswordVisibility}
+        />
+      )}
+    </div>
+
+    {/* ✅ Strength bar */}
+    {formData.password && (
+      <div className="flex flex-col gap-1 mt-1">
+        <div className="w-full h-2 rounded bg-gray-200">
+          <div
+            className={`h-2 rounded transition-all`}
+            style={{
+              width: `${(passwordScore + 1) * 20}%`,
+              backgroundColor:
+                passwordScore < 2
+                  ? "red"
+                  : passwordScore === 2
+                  ? "orange"
+                  : passwordScore === 3
+                  ? "yellowgreen"
+                  : "green",
+            }}
+          ></div>
+        </div>
+        <p className="text-xs text-gray-600">
+          {passwordScore < 2
+            ? "Weak password"
+            : passwordScore === 2
+            ? "Fair password"
+            : passwordScore === 3
+            ? "Good password"
+            : "Strong password"}
+        </p>
+        {passwordFeedback.length > 0 && (
+          <ul className="text-xs text-gray-500 list-disc pl-4">
+            {passwordFeedback.map((f, i) => (
+              <li key={i}>{f}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    )}
+  </div>
 
           {/* Confirm Password */}
           <div className="w-full flex items-center border border-gray-300 rounded-lg px-3 py-2 bg-white relative">
@@ -226,11 +283,10 @@ const Register = () => {
           <button
             type="submit"
             disabled={loading || !acceptTerms}
-            className={`w-full p-3 rounded-lg mt-3 font-medium text-white ${
-              !acceptTerms || loading
-                ? "bg-green-300 cursor-not-allowed"
-                : "bg-green-600 hover:bg-green-700"
-            }`}
+            className={`w-full p-3 rounded-lg mt-3 font-medium text-white ${!acceptTerms || loading
+              ? "bg-green-300 cursor-not-allowed"
+              : "bg-green-600 hover:bg-green-700"
+              }`}
           >
             {loading ? "Registering..." : "Register"}
           </button>
@@ -248,17 +304,24 @@ const Register = () => {
       {/* Terms Modal */}
       {showTerms && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-[90%] max-w-md text-gray-800 relative shadow-lg">
-            <h2 className="text-lg font-bold mb-3">Terms and Agreements</h2>
-            <div className="text-sm text-gray-700 mb-4 max-h-60 overflow-y-auto whitespace-pre-wrap">
+          <div className="bg-white w-[95%] h-[90%] rounded-xl shadow-xl p-6 text-gray-800 relative flex flex-col">
+            {/* Header */}
+            <h2 className="text-2xl font-bold mb-4">Terms and Agreements</h2>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto text-base md:text-lg text-gray-700 whitespace-pre-wrap pr-2 leading-relaxed">
               {termsText}
             </div>
-            <button
-              onClick={() => setShowTerms(false)}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
-            >
-              Close
-            </button>
+
+            {/* Footer Button */}
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setShowTerms(false)}
+                className="px-5 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm md:text-base"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

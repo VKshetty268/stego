@@ -24,11 +24,11 @@ const ResultsList: React.FC<Props> = ({ results, className }) => {
     >
       {/* Malicious Section */}
       <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm h-full flex flex-col">
-        <h3 className="text-red-600 font-semibold mb-3">Malicious Files</h3>
+        <h3 className="text-red-600 font-semibold mb-3">Detected Files</h3>
         <div className="flex-1 overflow-y-auto">
           {!malicious.length && (
             <p className="text-gray-500 text-sm">
-              No malicious files this session
+              No Detected files this session
             </p>
           )}
           {malicious.map((r, i) => (
@@ -39,10 +39,10 @@ const ResultsList: React.FC<Props> = ({ results, className }) => {
 
       {/* Safe Section */}
       <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm h-full flex flex-col">
-        <h3 className="text-green-600 font-semibold mb-3">Safe Files</h3>
+        <h3 className="text-green-600 font-semibold mb-3">Clean Files</h3>
         <div className="flex-1 overflow-y-auto">
           {!safe.length && (
-            <p className="text-gray-500 text-sm">No safe files this session</p>
+            <p className="text-gray-500 text-sm">No Clean files this session</p>
           )}
           {safe.map((r, i) => (
             <ResultItem key={`safe-${i}`} result={r} />
