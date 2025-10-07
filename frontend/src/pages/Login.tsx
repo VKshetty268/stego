@@ -76,9 +76,9 @@ const Login = () => {
   return (
     <div className="w-full h-screen flex items-center justify-center bg-white">
       <div className="w-[90%] max-w-sm md:max-w-md p-8 bg-white flex-col flex items-center gap-5 rounded-xl shadow-lg border border-gray-200">
-        
 
-                {/* Logo */}
+
+        {/* Logo */}
         <img
           src="/Wet-Stone-Logo-Black.png"
           alt="Wetstone Logo"
@@ -145,6 +145,15 @@ const Login = () => {
           </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
+
+          <p className="text-sm text-gray-500 text-center mt-3">
+            <span
+              onClick={() => navigate("/forgot-password")}
+              className="text-green-600 cursor-pointer hover:underline"
+            >
+              Forgot your password?
+            </span>
+          </p>
 
           {/* Login Button */}
           <button

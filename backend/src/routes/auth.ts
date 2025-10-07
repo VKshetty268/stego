@@ -342,4 +342,118 @@ router.post("/resend-otp", async (req, res) => {
   }
 });
 
+// helper: make a Gmail transporter using your existing env
+function makeTransporter() {
+  // You already use Gmail elsewhere; reuse that for consistency
+  return nodemailer.createTransport({
+    service: "Gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+}
+
+// helper: create a secure token (store hashed in DB, return raw for email link)
+function createPasswordResetToken() {
+  const raw = crypto.randomBytes(32).toString("hex"); // what goes in URL
+  const hashed = crypto.createHash("sha256").update(raw).digest("hex"); // what we store
+  const expires = Date.now() + 60 * 60 * 1000; // 1 hour
+  return { raw, hashed, expires };
+}
+
+/**
+ * POST /api/auth/forgot-password
+ * Body: { email }
+ * Always returns 200 with a generic message (avoid account enumeration)
+ */
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body as { email?: string };
+    if (!email) return res.status(400).json({ error: "Email is required" });
+
+    const user = await User.findOne({ email });
+    if (user) {
+      const { raw, hashed, expires } = createPasswordResetToken();
+      user.resetPasswordToken = hashed;
+      user.resetPasswordExpires = new Date(expires);
+      await user.save();
+
+      const frontendBase = process.env.FRONTEND_URL || "http://localhost:5173";
+      const resetUrl = `${frontendBase}/reset-password/${raw}`;
+
+      const transporter = makeTransporter();
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "Reset your StegoEnterprise password",
+        html: `
+          <div style="font-family:Arial,sans-serif;color:#333;line-height:1.5">
+            <h2>Reset your password</h2>
+            <p>We received a request to reset your StegoEnterprise password.</p>
+            <p>
+              Click the button below to choose a new password. This link will
+              expire in <strong>1 hour</strong>.
+            </p>
+            <p style="margin:24px 0">
+              <a href="${resetUrl}"
+                 style="background:#16a34a;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block">
+                Reset Password
+              </a>
+            </p>
+            <p>If you didn’t request this, you can safely ignore this email.</p>
+          </div>
+        `,
+      });
+    }
+
+    // Return success even if user isn't found (prevents email enumeration)
+    return res.json({ message: "If an account exists for this email, a reset link has been sent." });
+  } catch (err) {
+    console.error("forgot-password error:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+/**
+ * POST /api/auth/reset-password/:token
+ * Body: { password }
+ */
+router.post("/reset-password/:token", async (req, res) => {
+  try {
+    const { token } = req.params as { token: string };
+    const { password } = req.body as { password?: string };
+
+    if (!token) return res.status(400).json({ error: "Token is required" });
+    if (!password) return res.status(400).json({ error: "Password is required" });
+
+    const hashed = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken: hashed,
+      resetPasswordExpires: { $gt: new Date() }, // not expired
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid or expired reset link" });
+    }
+
+    // update password
+    const hashedPw = await bcrypt.hash(password, 10);
+    user.password = hashedPw;
+    // clear reset fields
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    // optional: mark verified if they reset via email they control
+    if (!user.isVerified) user.isVerified = true;
+
+    await user.save();
+
+    return res.json({ message: "Password has been reset successfully. You can now log in." });
+  } catch (err) {
+    console.error("reset-password error:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
 export default router;

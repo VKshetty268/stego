@@ -18,6 +18,10 @@ export interface IUser extends Document {
 
   // Google onboarding flag
   needsProfileCompletion: boolean;
+
+    // ✅ Password reset
+  resetPasswordToken?: string | null;     // hashed
+  resetPasswordExpires?: Date | null;     // expiry
 }
 
 const UserSchema = new Schema<IUser>(
@@ -37,6 +41,11 @@ const UserSchema = new Schema<IUser>(
     remainingScans: { type: Number, default: 50 },
 
     needsProfileCompletion: { type: Boolean, default: false },
+
+    // ✅ Password reset
+    resetPasswordToken: { type: String, default: null },
+    resetPasswordExpires: { type: Date, default: null },
+
   },
   { timestamps: true }
 );

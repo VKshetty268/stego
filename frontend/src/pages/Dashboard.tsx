@@ -12,7 +12,7 @@ const Dashboard: React.FC = () => {
 
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
-  
+
 
   const [stats, setStats] = useState({
     allScans: 0,
@@ -27,7 +27,7 @@ const Dashboard: React.FC = () => {
 
   const [preview, setPreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  
+
   const [progress, setProgress] = useState(0);
   const [scanning, setScanning] = useState(false);
 
@@ -69,57 +69,57 @@ const Dashboard: React.FC = () => {
 
 
   // ✅ Return preview: real thumbnail for images, placeholder for others
-const getPreviewForFile = (file: File) => {
-  if (file.type.startsWith("image/")) {
-    return URL.createObjectURL(file); // works for png, jpg, etc.
-  } else {
-    return "/File-Thumbnail.png"; // make sure to add this to your /public folder
-  }
-};
+  const getPreviewForFile = (file: File) => {
+    if (file.type.startsWith("image/")) {
+      return URL.createObjectURL(file); // works for png, jpg, etc.
+    } else {
+      return "/File-Thumbnail.png"; // make sure to add this to your /public folder
+    }
+  };
 
   // ✅ Supported file extensions (same as your backend supports)
-const SUPPORTED_EXTENSIONS = [
-  ".jpeg", ".jpg", ".bmp", ".gif", ".png", ".wav", ".mp3", ".jp2", ".tif", ".tiff",
-  ".pcx", ".3gp", ".m4v", ".m4a", ".mov", ".mp4", ".avi", ".flv", ".mpg", ".mpeg",
-  ".asf", ".ole", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pdf", ".ico",
-  ".elf", ".swf", ".exe", ".webm", ".ogg", ".nes", ".txt"
-];
+  const SUPPORTED_EXTENSIONS = [
+    ".jpeg", ".jpg", ".bmp", ".gif", ".png", ".wav", ".mp3", ".jp2", ".tif", ".tiff",
+    ".pcx", ".3gp", ".m4v", ".m4a", ".mov", ".mp4", ".avi", ".flv", ".mpg", ".mpeg",
+    ".asf", ".ole", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pdf", ".ico",
+    ".elf", ".swf", ".exe", ".webm", ".ogg", ".nes", ".txt"
+  ];
 
 
-const isSupportedFile = (file: File) => {
-  const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
-  return SUPPORTED_EXTENSIONS.includes(ext);
-};
+  const isSupportedFile = (file: File) => {
+    const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+    return SUPPORTED_EXTENSIONS.includes(ext);
+  };
 
-// inside onFilesChosen:
-const onFilesChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
-  if (!e.target.files?.length) return;
-  const file = e.target.files[0];
+  // inside onFilesChosen:
+  const onFilesChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+    const file = e.target.files[0];
 
-  if (!isSupportedFile(file)) {
-    setError("Unsupported file type. Please upload a supported file.");
-    return;
-  }
-
-  setSelectedFile(file);
-  setPreview(getPreviewForFile(file));
-  setError(null);
-};
-
-// inside handleDrop:
-const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-  e.preventDefault();
-  const file = e.dataTransfer.files[0];
-  if (file) {
     if (!isSupportedFile(file)) {
       setError("Unsupported file type. Please upload a supported file.");
       return;
     }
+
     setSelectedFile(file);
     setPreview(getPreviewForFile(file));
     setError(null);
-  }
-};
+  };
+
+  // inside handleDrop:
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      if (!isSupportedFile(file)) {
+        setError("Unsupported file type. Please upload a supported file.");
+        return;
+      }
+      setSelectedFile(file);
+      setPreview(getPreviewForFile(file));
+      setError(null);
+    }
+  };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -130,7 +130,7 @@ const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     setError(null);
     setScanning(true);
     setProgress(0);
-    
+
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev < 90) return prev + 5;
@@ -171,43 +171,43 @@ const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex justify-center p-6 overflow-y-auto">
-  <div className="w-[95%] max-w-6xl bg-white text-gray-900 rounded-2xl shadow-md p-8 flex flex-col gap-6 border border-gray-200">
+      <div className="w-[95%] max-w-6xl bg-white text-gray-900 rounded-2xl shadow-md p-8 flex flex-col gap-6 border border-gray-200">
 
-    {/* ✅ Logo at the top */}
-    <div className="flex justify-center mb-4">
-      <img
-        src="/Wet-Stone-Logo-Black.png"
-        alt="WetStone Logo"
-        className="h-12 md:h-16 object-contain"
-      />
-    </div>
-
-    {/* Top Section with Contact + File Types */}
-    <div className="bg-gray-100 p-5 rounded-lg border border-gray-200">
-      <h3 className="font-semibold text-lg mb-2">
-        If you’re worried that your images, videos, or documents may contain
-        hidden data, StegoEnterprise by WetStone Labs can detect
-        steganography in many types of common media files. Use this trial to
-        see how it works and test your files below.
-      </h3>
-
-      {/* Toggle File Types */}
-      <p
-        onClick={() => setShowFileTypes(!showFileTypes)}
-        className="mt-3 text-green-600 hover:underline cursor-pointer font-medium"
-      >
-        {showFileTypes ? "Hide Supported File Types" : "Show Supported File Types"}
-      </p>
-      {showFileTypes && (
-        <div className="mt-3 text-sm text-gray-700 space-y-1">
-          <p>
-            JPEG, BMP, GIF, PNG, WAV, MP3, JPEG 2000, TIFF, PCX, 3GP, M4V,
-            M4A, MOV, MP4, AVI, FLV, MPG/MPEG, ASF, OLE, MS Office Files,
-            PDF, ICO, ELF, SWF, EXE, WEBM, OGG, NES, TEXT
-          </p>
+        {/* ✅ Logo at the top */}
+        <div className="flex justify-center mb-4">
+          <img
+            src="/Wet-Stone-Logo-Black.png"
+            alt="WetStone Logo"
+            className="h-12 md:h-16 object-contain"
+          />
         </div>
-      )}
-    </div>
+
+        {/* Top Section with Contact + File Types */}
+        <div className="bg-gray-100 p-5 rounded-lg border border-gray-200">
+          <h3 className="font-semibold text-lg mb-2">
+            If you’re worried that your images, videos, or documents may contain
+            hidden data, StegoEnterprise by WetStone Labs can detect
+            steganography in many types of common media files. Use this trial to
+            see how it works and test your files below.
+          </h3>
+
+          {/* Toggle File Types */}
+          <p
+            onClick={() => setShowFileTypes(!showFileTypes)}
+            className="mt-3 text-green-600 hover:underline cursor-pointer font-medium"
+          >
+            {showFileTypes ? "Hide Supported File Types" : "Show Supported File Types"}
+          </p>
+          {showFileTypes && (
+            <div className="mt-3 text-sm text-gray-700 space-y-1">
+              <p>
+                JPEG, BMP, GIF, PNG, WAV, MP3, JPEG 2000, TIFF, PCX, 3GP, M4V,
+                M4A, MOV, MP4, AVI, FLV, MPG/MPEG, ASF, OLE, MS Office Files,
+                PDF, ICO, ELF, SWF, EXE, WEBM, OGG, NES, TEXT
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Header with user info + stats */}
         <div className="flex justify-between items-center">
@@ -309,87 +309,89 @@ const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         </div>
 
         {/* Contact Section */}
-        <div className="bg-gradient-to-b from-blue-500 to-blue-800 p-5 rounded-xl shadow-md">
-          <h3 className="font-semibold text-lg text-white">Contact Sales</h3>
+        {/* Contact Section */}
+        <div className="bg-gradient-to-b from-blue-500 to-blue-800 p-5 rounded-xl shadow-md text-center">
+          <h3 className="font-semibold text-lg text-white">Contact Us</h3>
           <p className="text-sm text-blue-100 mt-2">
             For more information beyond this trial: <br />
             Phone: (973) 818-9705 <br />
             Email: sales@wetstonelabs.com
           </p>
           <button
-            onClick={() => window.location.href = "mailto:sales@wetstonelabs.com"}
-            className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
+            onClick={() => (window.location.href = "mailto:sales@wetstonelabs.com")}
+            className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 mx-auto"
           >
             Contact Sales
           </button>
         </div>
+
       </div>
 
       {/* Persistent Popup when scans are exhausted */}
-     {/* Persistent Popup when scans are exhausted */}
-{showLimitPopup && (
-  <div className="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-40">
-    <div className="bg-white text-black rounded-xl shadow-xl p-8 max-w-lg w-full text-center border border-gray-200">
-      <h2 className="text-2xl font-bold mb-4">
-        You have reached your free scan limit
-      </h2>
-      <p className="text-gray-600 mb-3">
-        Thank you for using the StegoEnterprise trial platform.
-      </p>
-      <p className="text-gray-600 mb-3">
-        To continue scanning files, or if you believe your system may
-        contain hidden or infected content, please contact our sales team
-        to learn more about the full version of StegoEnterprise for your
-        organization.
-      </p>
-      <div className="text-gray-800 font-medium mt-4 mb-6">
-        <p>Contact Sales:</p>
-        <p>Phone: (973) 818-9705</p>
-        <p>Email: sales@wetstonelabs.com</p>
-      </div>
-      {/* ✅ Close button that signs out */}
-      <button
-        onClick={() => {
-          localStorage.removeItem("token");
-          navigate("/");
-        }}
-        className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-      >
-        Close
-      </button>
-    </div>
-  </div>
-)}
+      {/* Persistent Popup when scans are exhausted */}
+      {showLimitPopup && (
+        <div className="fixed inset-0 flex items-center justify-center z-40 bg-black bg-opacity-40">
+          <div className="bg-white text-black rounded-xl shadow-xl p-8 max-w-lg w-full text-center border border-gray-200">
+            <h2 className="text-2xl font-bold mb-4">
+              You have reached your free scan limit
+            </h2>
+            <p className="text-gray-600 mb-3">
+              Thank you for using the StegoEnterprise trial platform.
+            </p>
+            <p className="text-gray-600 mb-3">
+              To continue scanning files, or if you believe your system may
+              contain hidden or infected content, please contact our sales team
+              to learn more about the full version of StegoEnterprise for your
+              organization.
+            </p>
+            <div className="text-gray-800 font-medium mt-4 mb-6">
+              <p>Contact Us:</p>
+              <p>Phone: (973) 818-9705</p>
+              <p>Email: sales@wetstonelabs.com</p>
+            </div>
+            {/* ✅ Close button that signs out */}
+            <button
+              onClick={() => {
+                localStorage.removeItem("token");
+                navigate("/");
+              }}
+              className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       {/* Sign Out Confirmation Modal */}
-{showSignOutConfirm && (
-  <div className="fixed inset-0 flex items-center justify-center z-60 bg-black bg-opacity-40">
-    <div className="bg-white text-gray-900 rounded-xl shadow-xl p-6 max-w-md w-full text-center">
-      <h2 className="text-lg font-semibold mb-3">
-        Are you sure you want to sign out?
-      </h2>
-      <p className="text-sm text-gray-600 mb-4">
-        If you sign out now, the scan results from this session will be erased.
-      </p>
-      <div className="flex justify-center gap-4">
-        <button
-          onClick={() => {
-            localStorage.removeItem("token");
-            navigate("/");
-          }}
-          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-        >
-          Yes, Sign Out
-        </button>
-        <button
-          onClick={() => setShowSignOutConfirm(false)}
-          className="px-4 py-2 bg-gray-300 text-gray-900 rounded-lg hover:bg-gray-400"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      {showSignOutConfirm && (
+        <div className="fixed inset-0 flex items-center justify-center z-60 bg-black bg-opacity-40">
+          <div className="bg-white text-gray-900 rounded-xl shadow-xl p-6 max-w-md w-full text-center">
+            <h2 className="text-lg font-semibold mb-3">
+              Are you sure you want to sign out?
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">
+              If you sign out now, the scan results from this session will be erased.
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => {
+                  localStorage.removeItem("token");
+                  navigate("/");
+                }}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              >
+                Yes, Sign Out
+              </button>
+              <button
+                onClick={() => setShowSignOutConfirm(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-900 rounded-lg hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
 
   );
