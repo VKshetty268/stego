@@ -72,9 +72,9 @@ router.post("/upload", auth, upload.array("files"), async (req, res) => {
   if (!files.length) return res.status(400).json({ error: "No files uploaded" });
   
 
-  if (!(req as any).session.scanResults) {
-    (req as any).session.scanResults = [];
-  }
+  // if (!(req as any).session.scanResults) {
+  //   (req as any).session.scanResults = [];
+  // }
 
   const newResults: any[] = [];
 
@@ -118,7 +118,7 @@ router.post("/upload", auth, upload.array("files"), async (req, res) => {
           details: report?.files?.[0] || {},
         };
 
-        (req as any).session.scanResults.unshift(resultObj);
+        // (req as any).session.scanResults.unshift(resultObj);
         newResults.unshift(resultObj);
       } catch (e: any) {
         const errObj = {
@@ -128,7 +128,7 @@ router.post("/upload", auth, upload.array("files"), async (req, res) => {
           scanTime: null,
           details: [{ finding: e?.message || "Scan failed", severity: "High", type: "error" }],
         };
-        (req as any).session.scanResults.unshift(errObj);
+        // (req as any).session.scanResults.unshift(errObj);
         newResults.unshift(errObj);
       } finally {
         fs.promises.unlink(f.path).catch(() => {});

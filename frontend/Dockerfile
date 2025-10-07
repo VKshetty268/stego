@@ -10,7 +10,7 @@ COPY . .
 RUN npm run build  # outputs to /app/dist
 
 # --- Nginx stage ---
-FROM nginx:1.27-alpine
+FROM nginx:1.27-alpine-slim
 WORKDIR /usr/share/nginx/html
 
 # SPA history fallback
