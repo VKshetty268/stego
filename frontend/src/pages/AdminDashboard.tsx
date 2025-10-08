@@ -63,6 +63,7 @@ const AdminDashboard: React.FC = () => {
 
   const signOut = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("isAdmin");
     navigate("/");
   };
 

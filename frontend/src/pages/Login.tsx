@@ -27,6 +27,7 @@ const Login = () => {
       const res = await API.post("/auth/login", { email, password });
       if (res.data?.token) {
         localStorage.setItem("token", res.data.token);
+        localStorage.setItem("isAdmin", res.data.user.isAdmin ? "true" : "false"); // ✅ save role
         if (res.data.user.isAdmin) navigate("/admin");
         else navigate("/dashboard");
       }
@@ -146,14 +147,7 @@ const Login = () => {
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
-          <p className="text-sm text-gray-500 text-center mt-3">
-            <span
-              onClick={() => navigate("/forgot-password")}
-              className="text-green-600 cursor-pointer hover:underline"
-            >
-              Forgot your password?
-            </span>
-          </p>
+          
 
           {/* Login Button */}
           <button
@@ -164,6 +158,15 @@ const Login = () => {
             {loading ? "Logging in…" : "Login"}
           </button>
         </form>
+
+            <p className="text-sm text-gray-500 text-center mt-3">
+            <span
+              onClick={() => navigate("/forgot-password")}
+              className="text-green-600 cursor-pointer hover:underline"
+            >
+              Forgot your password?
+            </span>
+          </p>
 
         {/* Divider */}
         <div className="relative w-full flex items-center justify-center py-3">
